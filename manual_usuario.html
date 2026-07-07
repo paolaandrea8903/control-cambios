@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Manual de Usuario - Comparador de Presupuestos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-head/6.0.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      color: #1e293b;
+      line-height: 1.6;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+    .print-tip-bar {
+      background-color: #6366f1;
+      color: white;
+      text-align: center;
+      padding: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    .print-tip-bar button {
+      background-color: white;
+      color: #6366f1;
+      border: none;
+      padding: 6px 12px;
+      margin-left: 10px;
+      border-radius: 4px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    .print-tip-bar button:hover {
+      background-color: #f1f5f9;
+      transform: scale(1.05);
+    }
+    .page-container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.05);
+      border-radius: 8px;
+      padding: 50px;
+    }
+    .cover {
+      text-align: center;
+      padding: 80px 0 120px 0;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .cover h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+    .cover p {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+    .cover-icon {
+      font-size: 72px;
+      color: #6366f1;
+      margin-bottom: 20px;
+      display: inline-block;
+      background: rgba(99, 102, 241, 0.08);
+      padding: 30px;
+      border-radius: 50%;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 40px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 8px;
+    }
+    .section-title i {
+      color: #6366f1;
+    }
+    .step-badge {
+      background-color: #6366f1;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+    p, ul, ol {
+      font-size: 14.5px;
+      color: #475569;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    .alert-box {
+      background-color: #f0fdf4;
+      border-left: 4px solid #16a34a;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .alert-box h4 {
+      margin: 0 0 6px 0;
+      color: #14532d;
+      font-size: 14.5px;
+      font-weight: 700;
+    }
+    .alert-box p {
+      margin: 0;
+      color: #166534;
+      font-size: 13.5px;
+    }
+    .alert-warning {
+      background-color: #fffbeb;
+      border-left-color: #d97706;
+    }
+    .alert-warning h4 { color: #78350f; }
+    .alert-warning p { color: #92400e; }
+    
+    .screenshot-mock {
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 20px 0;
+      font-family: monospace;
+      font-size: 12px;
+      color: #64748b;
+      text-align: center;
+    }
+    .page-break {
+      page-break-after: always;
+    }
+    @media print {
+      .print-tip-bar {
+        display: none;
+      }
+      body {
+        background-color: white;
+      }
+      .page-container {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="print-tip-bar">
+    📄 ¿Quieres guardarlo en PDF? Haz clic en este botón e imprime seleccionando "Guardar como PDF"
+    <button onclick="window.print()"><i class="fa-solid fa-print"></i> Guardar en PDF</button>
+  </div>
+
+  <div class="page-container">
+    
+    <!-- PORTADA -->
+    <div class="cover page-break">
+      <div class="cover-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1;">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+      </div>
+      <h1>Manual de Usuario</h1>
+      <p>Comparador de Revisiones de Presupuesto (HTML5/Client-Side)</p>
+      <div style="margin-top: 60px; font-size: 13px; color: #94a3b8;">
+        <div>Plataforma de Control de Cambios en la Nube</div>
+        <div>Uso Público y Genérico</div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 1: INTRODUCCIÓN -->
+    <div class="section-title">
+      <i class="fa-solid fa-info-circle"></i>
+      <span>1. Introducción y Privacidad</span>
+    </div>
+    <p>
+      Esta aplicación web ha sido diseñada para realizar la comparación automática de presupuestos de obra consolidados en formato Excel (desglosados en capítulos y partidas con precios y mediciones).
+    </p>
+    <div class="alert-box">
+      <h4>🔒 Seguridad y Privacidad Absoluta</h4>
+      <p>
+        <strong>Ningún presupuesto se sube a internet.</strong> Todo el procesamiento de los archivos, la lectura de los datos y la exportación de reportes ocurren localmente dentro de tu navegador web. Puedes usar la aplicación estando completamente desconectado de internet; tus datos nunca saldrán de tu ordenador.
+      </p>
+    </div>
+
+    <!-- SECCIÓN 2: ACCESO Y CARGA -->
+    <div class="section-title">
+      <span class="step-badge">Paso 1</span>
+      <span>Acceso y Carga de Archivos</span>
+    </div>
+    <p>
+      Sigue estos pasos para iniciar un análisis comparativo:
+    </p>
+    <ol>
+      <li>Abre la aplicación en tu navegador accediendo al enlace público proporcionado.</li>
+      <li>Haz clic en la pestaña <strong>Historial de Versiones</strong> (si no te redirige automáticamente).</li>
+      <li>Escribe el nombre del proyecto o presupuesto en el campo <strong>Nombre del Proyecto / Obra</strong>.</li>
+      <li>Arrastra o haz clic para subir los dos archivos correspondientes:
+        <ul>
+          <li><strong>Presupuesto Origen (V1):</strong> El presupuesto de base u original (anterior).</li>
+          <li><strong>Presupuesto Destino (V2):</strong> El presupuesto revisado o modificado (nuevo).</li>
+        </ul>
+      </li>
+      <li>Haz clic en el botón verde <strong>"Iniciar Análisis y Comparación con IA"</strong>.</li>
+    </ol>
+    <div class="alert-box alert-warning">
+      <h4>⚠️ Requisito del Formato Excel</h4>
+      <p>
+        Los archivos de presupuesto deben estar estructurados en filas donde la primera columna sea el código de la partida/capítulo (ej. <i>01.01</i>), la tercera columna sea la unidad de medida (ej. <i>M3</i> o vacío para capítulos) y la última columna represente el precio total.
+      </p>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- SECCIÓN 3: EXPLORACIÓN DE DATOS -->
+    <div class="section-title">
+      <span class="step-badge">Paso 2</span>
+      <span>Interpretación del Dashboard y Datos</span>
+    </div>
+    <p>
+      Una vez completado el análisis, la plataforma te redirigirá al <strong>Dashboard</strong> principal:
+    </p>
+    <ul>
+      <li><strong>Tarjetas de Totales:</strong> Visualizarás de forma clara el importe final del Presupuesto 1 (V1), del Presupuesto 2 (V2) y el ahorro neto o sobrecoste neto resultante.</li>
+      <li><strong>Gráficos por Capítulo:</strong> Un gráfico de barras te indicará qué capítulos representan las mayores variaciones. Al pasar el cursor, verás el código, nombre de capítulo e importe acumulado.</li>
+      <li><strong>Explorador por Capítulos:</strong> En esta pestaña podrás ver la estructura jerárquica del presupuesto con dos columnas de precios (Precio V1 y Precio V2) facilitando la detección de cambios en los precios unitarios (APU).</li>
+    </ul>
+
+    <!-- SECCIÓN 4: GENERACIÓN DE REPORTES -->
+    <div class="section-title">
+      <span class="step-badge">Paso 3</span>
+      <span>Informes y Descarga de Firmas</span>
+    </div>
+    <p>
+      Para descargar o imprimir los reportes de control de revisiones:
+    </p>
+    <ol>
+      <li>Accede a la pestaña <strong>Informes de Revisión</strong> en la barra lateral.</li>
+      <li>En la columna izquierda, en la tarjeta de <strong>"Datos de la Firma"</strong>, escribe los nombres del responsable que preparó/revisó el informe y del responsable que aprobará el documento.</li>
+      <li>Selecciona una de las tres plantillas disponibles en pantalla según el tipo de documento requerido.</li>
+      <li>El visualizador central mostrará en vivo cómo se adaptan las firmas al céntimo.</li>
+      <li>Haz clic en:
+        <ul>
+          <li><strong>Descargar Reporte en Excel:</strong> Genera un archivo de Excel profesional con bordes, colores y formatos de moneda, correspondiente a la plantilla activa.</li>
+          <li><strong>Imprimir Informe en PDF:</strong> Abre el menú del sistema para guardar el informe en PDF con un espaciado en blanco de 45px preparado para firmar a mano sobre la línea.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <!-- SECCIÓN 5: SOPORTE -->
+    <div class="section-title">
+      <i class="fa-solid fa-life-ring"></i>
+      <span>4. Consejos y Resolución de Problemas</span>
+    </div>
+    <ul>
+      <li><strong>¿La pantalla se queda vacía al iniciar?</strong> Asegúrate de que los archivos cargados sean de formato `.xlsx` o `.xls`.</li>
+      <li><strong>¿Los cambios acumulados no coinciden?</strong> Revisa que no existan códigos de partidas duplicados en el mismo archivo. El comparador vincula los elementos a través de su código único.</li>
+    </ul>
+
+  </div>
+
+</body>
+</html>
