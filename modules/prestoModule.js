@@ -19,6 +19,8 @@ class PrestoModule {
       throw new Error("presto-budget module expects parsed 2D row array.");
     }
 
+    const compareType = options.compareType || 'objetivo';
+
     // Default column mapping (fallback for the first Excel format)
     let colMapping = {
       code: 0,
@@ -29,7 +31,8 @@ class PrestoModule {
       qty2: 6,
       price: 8,
       total: 10,
-      longDesc: 11
+      longDesc: 11,
+      nature: 1
     };
 
     // Scan the first 15 rows to see if there is a header row to match columns dynamically
@@ -44,6 +47,7 @@ class PrestoModule {
       let foundTotal = -1;
       let foundQty = -1;
       let foundLongDesc = -1;
+      let foundNature = -1;
 
       for (let c = 0; c < row.length; c++) {
         const val = String(row[c] || '').toLowerCase().trim();
@@ -53,14 +57,41 @@ class PrestoModule {
           foundDesc = c;
         } else if (val === 'ud' || val === 'unidad' || val === 'unidades') {
           foundUnit = c;
-        } else if (val === 'precio' || val === 'prpres' || val === 'precio pres.' || val === 'pr. pres.' || val === 'precios' || val === 'precio unitario') {
-          foundPrice = c;
-        } else if (val === 'importe' || val === 'imppres' || val === 'total' || val === 'imp. pres.' || val === 'importe pres.' || val === 'importe total') {
-          foundTotal = c;
-        } else if (val === 'medición' || val === 'medicion' || val === 'cantidad' || val === 'canpres' || val === 'cantidades') {
-          foundQty = c;
+        } else if (val === 'nat' || val === 'naturaleza') {
+          foundNature = c;
         } else if (val === 'texto' || val === 'pliego' || val === 'texto largo' || val === 'ctexto' || val === 'texto_largo') {
           foundLongDesc = c;
+        }
+
+        // Match Price, Total, and Quantity dynamically based on chosen comparison mode
+        if (compareType === 'objetivo') {
+          if (['probj', 'precio objetivo', 'pr. obj.', 'pr.obj.', 'precioobj'].includes(val)) {
+            foundPrice = c;
+          } else if (['impobj', 'importe objetivo', 'imp. obj.', 'imp.obj.', 'importeobj'].includes(val)) {
+            foundTotal = c;
+          } else if (['canobj', 'cantidad objetivo', 'can. obj.', 'can.obj.', 'cantidadobj', 'medición objetivo', 'medición obj.'].includes(val)) {
+            foundQty = c;
+          }
+        } else {
+          // compareType === 'presupuesto'
+          if (['prpres', 'precio presupuesto', 'pr. pres.', 'pr.pres.', 'preciopres', 'precio unitario'].includes(val)) {
+            foundPrice = c;
+          } else if (['imppres', 'importe presupuesto', 'imp. pres.', 'imp.pres.', 'importepres', 'importe total'].includes(val)) {
+            foundTotal = c;
+          } else if (['canpres', 'cantidad presupuesto', 'can. pres.', 'can.pres.', 'cantidadpres', 'medición presupuesto', 'medición pres.'].includes(val)) {
+            foundQty = c;
+          }
+        }
+
+        // Fallbacks if no specific type suffix was found (but generic columns are present)
+        if (foundPrice === -1 && ['precio', 'precios', 'precio unitario'].includes(val)) {
+          foundPrice = c;
+        }
+        if (foundTotal === -1 && ['importe', 'total', 'importe total'].includes(val)) {
+          foundTotal = c;
+        }
+        if (foundQty === -1 && ['medición', 'medicion', 'cantidad', 'cantidades'].includes(val)) {
+          foundQty = c;
         }
       }
 
@@ -71,6 +102,7 @@ class PrestoModule {
         if (foundDesc !== -1) colMapping.desc = foundDesc;
         if (foundPrice !== -1) colMapping.price = foundPrice;
         if (foundTotal !== -1) colMapping.total = foundTotal;
+        if (foundNature !== -1) colMapping.nature = foundNature;
         if (foundQty !== -1) {
           colMapping.qty1 = foundQty;
           colMapping.qty2 = foundQty;
@@ -106,14 +138,20 @@ class PrestoModule {
       const total = row[colMapping.total] !== undefined && row[colMapping.total] !== null ? Number(row[colMapping.total]) : 0;
       const longDesc = colMapping.longDesc !== undefined && row[colMapping.longDesc] !== undefined && row[colMapping.longDesc] !== null ? String(row[colMapping.longDesc]).trim() : '';
 
+      // Check if it is a basic component (sub-item)
+      const nature = colMapping.nature !== undefined && row[colMapping.nature] !== undefined && row[colMapping.nature] !== null 
+        ? String(row[colMapping.nature]).toLowerCase().trim() 
+        : '';
+      const isBasicComponent = ['material', 'mano de obra', 'maquinaria', '1', '2', '3'].includes(nature);
+
       // Check if it's a chapter: unit is empty or 'nan' AND has no unit price / quantity, or matches nature indicators
       const isChapter = (
         (unit === '' || unit.toLowerCase() === 'nan') &&
         price === 0 &&
         qty1 === 0 &&
         qty2 === 0 &&
-        !(row[1] && String(row[1]).toLowerCase().trim().includes('partida'))
-      ) || (row[1] && ['capitulo', 'capítulo'].includes(String(row[1]).toLowerCase().trim()));
+        !(nature.includes('partida'))
+      ) || ['capitulo', 'capítulo'].includes(nature);
 
       if (isChapter) {
         currentChapterCode = code;
@@ -127,8 +165,26 @@ class PrestoModule {
           },
           null
         ));
+      } else if (isBasicComponent) {
+        // Classify basic components as 'basico' to prevent them from being treated as main 'partida'
+        // and avoid double-counting totals
+        elements.push(new Element(
+          code,
+          'basico',
+          desc,
+          {
+            unit: unit,
+            multiplier: multiplier,
+            qty_presupuesto: qty1,
+            qty_medicion: qty2,
+            price: price,
+            total: total,
+            longDesc: longDesc
+          },
+          currentChapterCode || 'ORFANAS'
+        ));
       } else {
-        // It's a work item (partida)
+        // It's a main work item (partida)
         elements.push(new Element(
           code,
           'partida',
