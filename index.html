@@ -159,7 +159,12 @@
             <div class="dashboard-card card-ai-summary">
               <div class="card-header">
                 <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Informe de Cambios Generado por la IA</h3>
-                <span class="badge badge-success-subtle">Listo</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="badge" id="stat-audit-badge" style="font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-circle-check"></i> Auditoría: Pendiente
+                  </span>
+                  <span class="badge badge-success-subtle">Listo</span>
+                </div>
               </div>
               <div class="card-body">
                 <div class="ai-speech-bubble" id="dashboard-ai-summary">
