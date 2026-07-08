@@ -205,7 +205,7 @@ class PrestoModule {
         const isSequentialInt = /^\d+$/.test(code) && (currentChapterCode === null || Math.abs(parseInt(code) - parseInt(currentChapterCode)) <= 2 || parseInt(code) <= 50);
         const isHierarchical = currentChapterCode && (code.startsWith(currentChapterCode) || currentChapterCode.startsWith(code.split('.')[0]));
         
-        if (isCIorCE || isSequentialInt || isHierarchical || (price === total && total > 0 && qty1 === 1) || ['capitulo', 'capítulo'].includes(nature)) {
+        if (isCIorCE || isSequentialInt || isHierarchical || ['capitulo', 'capítulo'].includes(nature)) {
           isChapter = true;
         }
       }
