@@ -229,7 +229,7 @@ class ChangeLogComponent {
       tr.innerHTML = `
         <td class="font-monospace text-muted" style="font-size: 11px;">${chg.id}</td>
         <td>${typeBadge}</td>
-        <td class="node-code">${chg.elementId}</td>
+        <td class="node-code">${chg.elementId.includes('___') ? chg.elementId.split('___')[1] : chg.elementId}</td>
         <td style="max-width: 250px; font-weight: 500;">${cellNameContent}</td>
         <td>${modDescription}</td>
         <td class="${econClass} font-monospace fw-bold text-end">${econText}</td>

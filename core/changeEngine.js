@@ -27,6 +27,9 @@ class ChangeEngine {
       
       const sourceEl = sourceElements.get(key);
       const targetEl = targetElements.get(key);
+      
+      const parent = (targetEl ? targetEl.parentId : (sourceEl ? sourceEl.parentId : '')) || '';
+      if (parent === '35' || parent.startsWith('35.')) continue;
 
       if (!sourceEl && targetEl) {
         // Element was ADDED

@@ -180,7 +180,7 @@ class ReportsViewComponent {
                 }
                 return `
                   <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: top;">
-                    <td style="padding: 8px 10px; font-family: monospace; font-weight: bold;">${chg.elementId}</td>
+                    <td style="padding: 8px 10px; font-family: monospace; font-weight: bold;">${chg.elementId.includes('___') ? chg.elementId.split('___')[1] : chg.elementId}</td>
                     <td style="padding: 8px 10px; font-weight: 700; color: ${typeColor}; font-size: 9px; letter-spacing: 0.3px;">${typeText}</td>
                     <td style="padding: 8px 10px; font-weight: 500;">${cellNameContent}</td>
                     <td style="padding: 8px 10px; font-family: monospace; text-align: right; font-weight: bold; ${rowClass}">${chg.impact.economic >= 0 ? '+' : ''}${this.formatCurrency(chg.impact.economic)}</td>
@@ -619,7 +619,7 @@ class ReportsViewComponent {
 
                 return `
                   <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: top;">
-                    <td style="padding: 10px 8px; font-family: monospace; font-weight: bold; font-size: 10px;">${chg.elementId}</td>
+                    <td style="padding: 10px 8px; font-family: monospace; font-weight: bold; font-size: 10px;">${chg.elementId.includes('___') ? chg.elementId.split('___')[1] : chg.elementId}</td>
                     <td style="padding: 10px 8px; font-weight: 700; color: ${typeColor}; font-size: 9px; letter-spacing: 0.3px;">${typeText}</td>
                     <td style="padding: 10px 8px; font-weight: 600;">${chg.elementName}</td>
                     <td style="padding: 10px 8px; line-height: 1.4;">${diffContent}</td>

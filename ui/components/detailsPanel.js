@@ -26,7 +26,7 @@ class DetailsPanelComponent {
 
     // Set header details
     const title = document.getElementById('details-element-title');
-    title.textContent = `${change.elementType === 'capitulo' ? 'Capítulo' : 'Partida'} ${change.elementId}`;
+    title.textContent = `${change.elementType === 'capitulo' ? 'Capítulo' : 'Partida'} ${change.elementId.includes('___') ? change.elementId.split('___')[1] : change.elementId}`;
     
     const badge = document.getElementById('details-change-type-badge');
     badge.textContent = change.changeType === 'added' ? 'Añadido' : change.changeType === 'deleted' ? 'Eliminado' : 'Modificado';
@@ -71,8 +71,8 @@ class DetailsPanelComponent {
     const oldHeader = document.getElementById('details-elem-desc-header');
     if (oldHeader) oldHeader.remove();
 
-    document.getElementById('prop-old-code').textContent = change.sourceVersion ? change.elementId : '-';
-    document.getElementById('prop-new-code').textContent = change.targetVersion ? change.elementId : '-';
+    document.getElementById('prop-old-code').textContent = change.sourceVersion ? (change.elementId.includes('___') ? change.elementId.split('___')[1] : change.elementId) : '-';
+    document.getElementById('prop-new-code').textContent = change.targetVersion ? (change.elementId.includes('___') ? change.elementId.split('___')[1] : change.elementId) : '-';
 
     document.getElementById('prop-old-unit').textContent = oldV.unit || '-';
     document.getElementById('prop-new-unit').textContent = newV.unit || '-';

@@ -146,7 +146,7 @@ class DashboardComponent {
     if (sortedChanges.length > 0) {
       const topChg = sortedChanges[0];
       const isSaving = topChg.impact.economic < 0;
-      highlightsHTML += `<li><b>Impacto Principal:</b> La ${topChg.changeType === 'added' ? 'adición' : topChg.changeType === 'deleted' ? 'eliminación' : 'modificación'} de <b>${topChg.elementId} - ${topChg.elementName}</b> genera un ${isSaving ? 'ahorro' : 'sobrecoste'} de <span class="${isSaving ? 'text-success' : 'text-danger'}">${this.formatCurrency(Math.abs(topChg.impact.economic))}</span>.</li>`;
+      highlightsHTML += `<li><b>Impacto Principal:</b> La ${topChg.changeType === 'added' ? 'adición' : topChg.changeType === 'deleted' ? 'eliminación' : 'modificación'} de <b>${topChg.elementId.includes('___') ? topChg.elementId.split('___')[1] : topChg.elementId} - ${topChg.elementName}</b> genera un ${isSaving ? 'ahorro' : 'sobrecoste'} de <span class="${isSaving ? 'text-success' : 'text-danger'}">${this.formatCurrency(Math.abs(topChg.impact.economic))}</span>.</li>`;
     }
 
     // Point 2: Specific facade note if exists
@@ -283,7 +283,7 @@ class DashboardComponent {
       }
 
       tr.innerHTML = `
-        <td class="node-code">${chg.elementId}</td>
+        <td class="node-code">${chg.elementId.includes('___') ? chg.elementId.split('___')[1] : chg.elementId}</td>
         <td style="max-width: 250px; font-weight: 500;">${chg.elementName}</td>
         <td>${typeBadge}</td>
         <td class="${econClass} font-monospace fw-bold">${econText}</td>

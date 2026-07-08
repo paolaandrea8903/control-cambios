@@ -200,13 +200,17 @@ class PrestoModule {
       // Check if it's a chapter: unit is empty or 'nan'
       let isChapter = false;
       if (unit === '' || unit.toLowerCase() === 'nan' || ['capitulo', 'capítulo'].includes(nature)) {
-        // True chapters/subchapters have empty units but exclude partidas with empty units (like test items 207, 6082)
-        const isCIorCE = (code === 'C.I.' || code === 'C.E.');
-        const isSequentialInt = /^\d+$/.test(code) && (currentChapterCode === null || Math.abs(parseInt(code) - parseInt(currentChapterCode)) <= 2 || parseInt(code) <= 50);
-        const isHierarchical = currentChapterCode && (code.startsWith(currentChapterCode) || currentChapterCode.startsWith(code.split('.')[0]));
-        
-        if (isCIorCE || isSequentialInt || isHierarchical || ['capitulo', 'capítulo'].includes(nature)) {
+        if (code.includes('.') && code !== 'C.I.' && code !== 'C.E.') {
+          // Subchapters always contain dots (e.g. 07.02, 120.01)
           isChapter = true;
+        } else {
+          // Level 1 chapters
+          const isCIorCE = (code === 'C.I.' || code === 'C.E.');
+          const isSequentialInt = /^\d+$/.test(code) && (currentChapterCode === null || Math.abs(parseInt(code) - parseInt(currentChapterCode)) <= 2 || parseInt(code) <= 50);
+          
+          if (isCIorCE || isSequentialInt || ['capitulo', 'capítulo'].includes(nature)) {
+            isChapter = true;
+          }
         }
       }
 
@@ -225,8 +229,9 @@ class PrestoModule {
       } else if (isBasicComponent) {
         // Classify basic components as 'basico' to prevent them from being treated as main 'partida'
         // and avoid double-counting totals
+        const parentId = currentChapterCode || 'ORFANAS';
         elements.push(new Element(
-          code,
+          `${parentId}___${code}`,
           'basico',
           desc,
           {
@@ -238,12 +243,13 @@ class PrestoModule {
             total: total,
             longDesc: longDesc
           },
-          currentChapterCode || 'ORFANAS'
+          parentId
         ));
       } else {
         // It's a main work item (partida)
+        const parentId = currentChapterCode || 'ORFANAS';
         elements.push(new Element(
-          code,
+          `${parentId}___${code}`,
           'partida',
           desc,
           {
@@ -255,7 +261,7 @@ class PrestoModule {
             total: total,
             longDesc: longDesc
           },
-          currentChapterCode || 'ORFANAS' // fallback if no preceding chapter
+          parentId
         ));
       }
     }
