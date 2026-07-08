@@ -298,6 +298,117 @@ class ReportGenerator {
   }
 
   /**
+   * Generates and downloads a scope change audit report in Excel format.
+   * @param {Project} project
+   * @param {Version} v1
+   * @param {Version} v2
+   * @param {Change[]} changes
+   */
+  static downloadScopeExcel(project, v1, v2, changes) {
+    if (!v2) return;
+    
+    const v1Name = v1 ? v1.name : 'Original';
+    const v2Name = v2.name;
+    const dateStr = new Date().toLocaleDateString('es-ES');
+    
+    const scopeChanges = changes.filter(chg => 
+      chg.changeType === 'added' || 
+      chg.changeType === 'deleted' || 
+      chg.fieldName.includes('name') || 
+      chg.fieldName.includes('longDesc')
+    );
+
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+      <meta charset="utf-8">
+      <style>
+        table { border-collapse: collapse; font-family: Calibri, sans-serif; font-size: 11px; }
+        .title-row { background-color: #6366f1; color: #ffffff; font-size: 14px; font-weight: bold; height: 35px; text-align: center; }
+        .sub-title-row { background-color: #1e293b; color: #cbd5e1; font-size: 11px; height: 22px; text-align: center; }
+        th { background-color: #1e293b; color: #ffffff; font-weight: bold; border: 1px solid #334155; padding: 8px 6px; }
+        td { border: 1px solid #cbd5e1; padding: 6px; vertical-align: top; }
+        .added { background-color: #d1fae5; color: #065f46; font-weight: bold; }
+        .deleted { background-color: #fee2e2; color: #991b1b; font-weight: bold; text-decoration: line-through; }
+        .modified { background-color: #fef3c7; color: #92400e; font-weight: bold; }
+        .text-center { text-align: center; }
+        .diff-v1 { color: #dc2626; text-decoration: line-through; }
+        .diff-v2 { color: #16a34a; font-weight: bold; }
+      </style>
+      </head>
+      <body>
+      <table>
+        <tr class="title-row">
+          <td colspan="5">INFORME DE CONTROL DE CAMBIOS DE ALCANCE (TEXTOS Y PLIEGOS)</td>
+        </tr>
+        <tr class="sub-title-row">
+          <td colspan="5">Proyecto: ${project.name} | V1: ${v1Name} vs V2: ${v2Name} | Fecha: ${dateStr}</td>
+        </tr>
+        <tr><td colspan="5"></td></tr>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Tipo Cambio</th>
+            <th>Concepto / Elemento</th>
+            <th>Especificación Anterior (V1)</th>
+            <th>Especificación Nueva (V2)</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    scopeChanges.forEach(chg => {
+      const typeText = chg.changeType === 'added' ? 'AÑADIDO' : chg.changeType === 'deleted' ? 'ELIMINADO' : 'MODIFICADO';
+      const rowClass = chg.changeType;
+      
+      let v1Text = '-';
+      let v2Text = '-';
+
+      if (chg.changeType === 'added') {
+        v2Text = chg.newValue.longDesc || chg.newValue.name || 'Nueva partida';
+      } else if (chg.changeType === 'deleted') {
+        v1Text = chg.oldValue.longDesc || chg.oldValue.name || 'Partida anulada';
+      } else {
+        if (chg.fieldName.includes('name')) {
+          v1Text = `[Resumen] ${chg.oldValue.name}`;
+          v2Text = `[Resumen] ${chg.newValue.name}`;
+        }
+        if (chg.fieldName.includes('longDesc')) {
+          v1Text = (v1Text !== '-' ? v1Text + '\n' : '') + `[Pliego] ${chg.oldValue.longDesc || ''}`;
+          v2Text = (v2Text !== '-' ? v2Text + '\n' : '') + `[Pliego] ${chg.newValue.longDesc || ''}`;
+        }
+      }
+
+      html += `
+        <tr>
+          <td style="mso-number-format:'\\@'; font-family: monospace;">${chg.elementId}</td>
+          <td class="${rowClass} text-center">${typeText}</td>
+          <td style="font-weight: bold;">${chg.elementName}</td>
+          <td class="diff-v1" style="white-space: pre-wrap;">${v1Text}</td>
+          <td class="diff-v2" style="white-space: pre-wrap;">${v2Text}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+      </tbody>
+      </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Informe_Alcance_${project.name.replace(/\s+/g, '_')}_${v2Name.replace(/\s+/g, '_')}.xls`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
    * Triggers download of the executive summary report.
    */
   static downloadExecutiveExcel(project, v1, v2, changes) {

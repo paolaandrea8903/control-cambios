@@ -113,7 +113,7 @@ class ChangeEngine {
         const newValue = {};
 
         // Compare name/description
-        if (sourceEl.name !== targetEl.name) {
+        if (sourceEl.name !== targetEl.name && ChangeEngine.isSignificantTextChange(sourceEl.name, targetEl.name)) {
           modifiedFields.push('name');
           oldValue.name = sourceEl.name;
           newValue.name = targetEl.name;
@@ -135,6 +135,15 @@ class ChangeEngine {
         for (const dataKey of allDataKeys) {
           const valSource = sourceEl.data[dataKey];
           const valTarget = targetEl.data[dataKey];
+
+          if (dataKey === 'longDesc') {
+            if (valSource !== valTarget && ChangeEngine.isSignificantTextChange(valSource, valTarget)) {
+              modifiedFields.push(dataKey);
+              oldValue[dataKey] = valSource;
+              newValue[dataKey] = valTarget;
+            }
+            continue;
+          }
 
           // Handle float comparisons with tolerance
           if (typeof valSource === 'number' && typeof valTarget === 'number') {
@@ -191,5 +200,25 @@ class ChangeEngine {
     }
 
     return changes;
+  }
+
+  /**
+   * Helper to check if a text change is significant (not just dots, commas, spaces or case).
+   * @param {string} str1
+   * @param {string} str2
+   * @returns {boolean} True if significant change
+   */
+  static isSignificantTextChange(str1, str2) {
+    if (!str1 || !str2) return str1 !== str2;
+    
+    const normalize = (str) => {
+      return str
+        .toLowerCase()
+        .replace(/[.,;:\-_()\/\\\'\"\n\r\t]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+    
+    return normalize(str1) !== normalize(str2);
   }
 }

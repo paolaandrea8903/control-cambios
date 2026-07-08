@@ -28,6 +28,8 @@ class ReportsViewComponent {
             ReportGenerator.downloadExecutiveExcel(currentProject, v1, v2, currentProject.changes);
           } else if (this.currentTemplate === 'comparison') {
             ReportGenerator.downloadStyledExcel(v1, v2, currentProject.changes);
+          } else if (this.currentTemplate === 'scope') {
+            ReportGenerator.downloadScopeExcel(currentProject, v1, v2, currentProject.changes);
           }
         }
       };
@@ -486,6 +488,144 @@ class ReportsViewComponent {
             </thead>
             <tbody>
               ${budgetRowsHtml}
+            </tbody>
+          </table>
+
+          <!-- Footer Signature -->
+          <div style="margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; color: #64748b; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+              <div style="font-weight: bold; margin-bottom: 4px;">Revisado / Preparado Por:</div>
+              <div style="height: 45px;"></div>
+              <div style="border-top: 1px solid #94a3b8; width: 180px; margin-bottom: 4px;"></div>
+              <div style="font-weight: bold; color: #1e293b;">${preparedName}</div>
+            </div>
+            
+            <div style="align-self: flex-end; font-size: 9px; color: #94a3b8; padding-bottom: 5px;">
+              Generado por RevConstruct
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
+              <div style="font-weight: bold; margin-bottom: 4px;">Aprobado Por:</div>
+              <div style="height: 45px;"></div>
+              <div style="border-top: 1px solid #94a3b8; width: 180px; margin-bottom: 4px;"></div>
+              <div style="font-weight: bold; color: #1e293b;">${approvedName}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (this.currentTemplate === 'scope') {
+      // 4. SCOPE CHANGES REPORT (NO PRICES, ONLY SIGNIFICANT TEXTS COMPARISON)
+      const scopeChanges = this.changes.filter(chg => 
+        chg.changeType === 'added' || 
+        chg.changeType === 'deleted' || 
+        chg.fieldName.includes('name') || 
+        chg.fieldName.includes('longDesc')
+      );
+
+      html = `
+        <div style="padding: 20px; color: #1e293b; line-height: 1.6;">
+          <!-- Header -->
+          <div style="border-bottom: 2px solid #6366f1; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+              <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0;">INFORME DE CONTROL DE CAMBIOS DE ALCANCE</h2>
+              <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px;">Auditoría de Especificaciones Técnicas y Pliegos</span>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #64748b;">
+              <div>Fecha: <b>${dateStr}</b></div>
+              <div>Proyecto: <b>${this.project.name}</b></div>
+            </div>
+          </div>
+
+          <!-- Metadata -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px;">
+            <tr>
+              <td style="padding: 6px; font-weight: 600; width: 140px; border-bottom: 1px solid #e2e8f0;">Versión de Origen (V1):</td>
+              <td style="padding: 6px; border-bottom: 1px solid #e2e8f0; color: #475569;">${v1Name}</td>
+              <td style="padding: 6px; font-weight: 600; width: 140px; border-bottom: 1px solid #e2e8f0;">Revisado Por:</td>
+              <td style="padding: 6px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;">${preparedName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Versión de Destino (V2):</td>
+              <td style="padding: 6px; border-bottom: 1px solid #e2e8f0; color: #475569;">${v2Name}</td>
+              <td style="padding: 6px; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Aprobado Por:</td>
+              <td style="padding: 6px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: bold;">${approvedName}</td>
+            </tr>
+          </table>
+
+          <div style="margin-bottom: 25px; background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; font-size: 11.5px; color: #475569;">
+            <i class="fa-solid fa-circle-info" style="color: #6366f1;"></i> Este documento detalla de forma exclusiva las adiciones, anulaciones y modificaciones significativas en las especificaciones, calidades o descripciones técnicas de las partidas del presupuesto. <i>Nota: Se han filtrado y omitido los cambios irrelevantes de puntuación, mayúsculas o espaciado para centrar la revisión únicamente en cambios reales de alcance de obra.</i>
+          </div>
+
+          <!-- Table of Changes -->
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 30px; text-align: left;">
+            <thead>
+              <tr style="background: #f1f5f9; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px; color: #475569;">
+                <th style="padding: 8px 10px; border-bottom: 1px solid #cbd5e1; width: 90px;">Código</th>
+                <th style="padding: 8px 10px; border-bottom: 1px solid #cbd5e1; width: 80px;">Tipo Cambio</th>
+                <th style="padding: 8px 10px; border-bottom: 1px solid #cbd5e1; width: 180px;">Partida / Elemento</th>
+                <th style="padding: 8px 10px; border-bottom: 1px solid #cbd5e1;">Diferencias en Especificación Técnica (V1 vs V2)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${scopeChanges.length === 0 ? `
+                <tr><td colspan="4" style="padding: 30px; text-align: center; color: #64748b; font-style: italic;">No se han detectado cambios de alcance significativos entre las descripciones de las versiones.</td></tr>
+              ` : scopeChanges.map(chg => {
+                const typeText = chg.changeType === 'added' ? 'AÑADIDO' : chg.changeType === 'deleted' ? 'ELIMINADO' : 'MODIFICADO';
+                const typeColor = chg.changeType === 'added' ? '#10b981' : chg.changeType === 'deleted' ? '#ef4444' : '#f59e0b';
+                
+                let diffContent = '';
+                if (chg.changeType === 'added') {
+                  diffContent = `
+                    <div style="color: #16a34a; font-weight: 500;">
+                      <b>Nueva partida integrada en proyecto:</b><br>
+                      ${chg.newValue?.longDesc || chg.newValue?.name || 'Sin pliego disponible.'}
+                    </div>
+                  `;
+                } else if (chg.changeType === 'deleted') {
+                  diffContent = `
+                    <div style="color: #b91c1c; text-decoration: line-through;">
+                      <b>Partida retirada del proyecto:</b><br>
+                      ${chg.oldValue?.longDesc || chg.oldValue?.name || 'Sin pliego disponible.'}
+                    </div>
+                  `;
+                } else {
+                  let nameBlock = '';
+                  if (chg.fieldName.includes('name')) {
+                    nameBlock = `
+                      <div style="margin-bottom: 6px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 6px;">
+                        <strong>Resumen Corto:</strong><br>
+                        <span style="color: #dc2626; text-decoration: line-through; display: block; margin-bottom: 2px;">V1: ${chg.oldValue.name}</span>
+                        <span style="color: #16a34a; display: block; font-weight: bold;">V2: ${chg.newValue.name}</span>
+                      </div>
+                    `;
+                  }
+                  let longBlock = '';
+                  if (chg.fieldName.includes('longDesc')) {
+                    longBlock = `
+                      <div>
+                        <strong>Texto Largo / Pliego Técnico:</strong><br>
+                        <span style="color: #dc2626; text-decoration: line-through; display: block; margin-bottom: 2px; white-space: pre-wrap;">V1: ${chg.oldValue.longDesc || '(Sin texto)'}</span>
+                        <span style="color: #16a34a; display: block; font-weight: bold; white-space: pre-wrap;">V2: ${chg.newValue.longDesc || '(Sin texto)'}</span>
+                      </div>
+                    `;
+                  }
+                  diffContent = `
+                    <div style="background-color: #f8fafc; padding: 8px; border-radius: 4px; border-left: 3px solid #6366f1;">
+                      ${nameBlock}
+                      ${longBlock}
+                    </div>
+                  `;
+                }
+
+                return `
+                  <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: top;">
+                    <td style="padding: 10px 8px; font-family: monospace; font-weight: bold; font-size: 10px;">${chg.elementId}</td>
+                    <td style="padding: 10px 8px; font-weight: 700; color: ${typeColor}; font-size: 9px; letter-spacing: 0.3px;">${typeText}</td>
+                    <td style="padding: 10px 8px; font-weight: 600;">${chg.elementName}</td>
+                    <td style="padding: 10px 8px; line-height: 1.4;">${diffContent}</td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
 
