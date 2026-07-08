@@ -91,6 +91,7 @@ class PrestoModule {
     const lines = text.split(/\r?\n/);
     const concepts = new Map(); // code -> { code, unit, desc, price, longDesc, isChapter }
     const relations = []; // { parent, child, factor, qty }
+    const cleanCode = (c) => c ? c.trim().replace(/#+$/, '') : '';
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -100,7 +101,8 @@ class PrestoModule {
       const type = parts[0];
 
       if (type === 'C') {
-        const code = parts[1] ? parts[1].trim() : '';
+        const rawCode = parts[1] ? parts[1].trim() : '';
+        const code = cleanCode(rawCode);
         const unit = parts[2] ? parts[2].trim() : '';
         const desc = parts[3] ? parts[3].trim() : '';
         const price = parts[4] ? parseFloat(parts[4].replace(',', '.')) || 0 : 0;
@@ -116,15 +118,31 @@ class PrestoModule {
           });
         }
       } else if (type === 'D') {
-        const code = parts[1] ? parts[1].trim() : '';
+        const rawCode = parts[1] ? parts[1].trim() : '';
+        const code = cleanCode(rawCode);
         const textContent = parts.slice(2).join('|').trim();
-        const cleanText = textContent.replace(/\\/g, '\n').trim();
-        if (code && concepts.has(code)) {
-          concepts.get(code).longDesc = cleanText;
+        
+        if (textContent.includes('\\')) {
+          const subParts = textContent.split('\\');
+          for (let j = 0; j < subParts.length; j += 3) {
+            const rawChild = subParts[j] ? subParts[j].trim() : '';
+            const child = cleanCode(rawChild);
+            if (!child) continue;
+            const factor = parseFloat(subParts[j+1]) || 1;
+            const qty = parseFloat(subParts[j+2]) || 0;
+            relations.push({ parent: code, child, factor, qty });
+          }
+        } else {
+          const cleanText = textContent.replace(/\\/g, '\n').trim();
+          if (code && concepts.has(code)) {
+            concepts.get(code).longDesc = cleanText;
+          }
         }
       } else if (type === 'R') {
-        const parent = parts[1] ? parts[1].trim() : '';
-        const child = parts[2] ? parts[2].trim() : '';
+        const rawParent = parts[1] ? parts[1].trim() : '';
+        const parent = cleanCode(rawParent);
+        const rawChild = parts[2] ? parts[2].trim() : '';
+        const child = cleanCode(rawChild);
         const factor = parts[3] ? parseFloat(parts[3].replace(',', '.')) || 1 : 1;
         const qty = parts[4] ? parseFloat(parts[4].replace(',', '.')) || 0 : 0;
         if (parent && child) {
