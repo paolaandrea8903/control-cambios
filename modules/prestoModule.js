@@ -144,14 +144,8 @@ class PrestoModule {
         : '';
       const isBasicComponent = ['material', 'mano de obra', 'maquinaria', '1', '2', '3'].includes(nature);
 
-      // Check if it's a chapter: unit is empty or 'nan' AND has no unit price / quantity, or matches nature indicators
-      const isChapter = (
-        (unit === '' || unit.toLowerCase() === 'nan') &&
-        price === 0 &&
-        qty1 === 0 &&
-        qty2 === 0 &&
-        !(nature.includes('partida'))
-      ) || ['capitulo', 'capítulo'].includes(nature);
+      // Check if it's a chapter: unit is empty or 'nan' or matches nature indicators
+      const isChapter = (unit === '' || unit.toLowerCase() === 'nan' || ['capitulo', 'capítulo'].includes(nature));
 
       if (isChapter) {
         currentChapterCode = code;
