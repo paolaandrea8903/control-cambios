@@ -148,12 +148,31 @@ class ReportsViewComponent {
                 const typeColor = chg.changeType === 'added' ? '#10b981' : chg.changeType === 'deleted' ? '#ef4444' : '#f59e0b';
                 const rowClass = chg.impact.economic > 0 ? 'color: #dc2626;' : chg.impact.economic < 0 ? 'color: #16a34a;' : '';
                 let cellNameContent = chg.elementName;
-                if (chg.changeType === 'modified' && chg.fieldName.includes('name')) {
+                if (chg.changeType === 'modified' && (chg.fieldName.includes('name') || chg.fieldName.includes('longDesc'))) {
+                  let nameDiff = '';
+                  if (chg.fieldName.includes('name')) {
+                    nameDiff = `
+                      <div style="margin-bottom: 2px;">
+                        <strong>Resumen Corto:</strong><br>
+                        <span style="color: #dc2626; text-decoration: line-through;">V1: ${chg.oldValue.name}</span> | <span style="color: #16a34a; font-weight: bold;">V2: ${chg.newValue.name}</span>
+                      </div>
+                    `;
+                  }
+                  let longDescDiff = '';
+                  if (chg.fieldName.includes('longDesc')) {
+                    longDescDiff = `
+                      <div>
+                        <strong>Texto Largo:</strong><br>
+                        <span style="color: #dc2626; text-decoration: line-through; display: block; max-height: 40px; overflow: hidden; text-overflow: ellipsis;">V1: ${chg.oldValue.longDesc || '(Vacío)'}</span>
+                        <span style="color: #16a34a; display: block; font-weight: bold; max-height: 40px; overflow: hidden; text-overflow: ellipsis;">V2: ${chg.newValue.longDesc || '(Vacío)'}</span>
+                      </div>
+                    `;
+                  }
                   cellNameContent = `
                     <div>${chg.elementName}</div>
-                    <div style="font-size: 9px; color: #64748b; margin-top: 4px; padding: 4px 6px; background-color: #f8fafc; border-radius: 4px; border-left: 2px solid #6366f1; font-weight: normal; line-height: 1.3;">
-                      <span style="color: #dc2626; text-decoration: line-through; display: block; margin-bottom: 2px;">V1: ${chg.oldValue.name}</span>
-                      <span style="color: #16a34a; display: block; font-weight: bold;">V2: ${chg.newValue.name}</span>
+                    <div style="font-size: 8.5px; color: #64748b; margin-top: 4px; padding: 4px 6px; background-color: #f8fafc; border-radius: 4px; border-left: 2px solid #6366f1; font-weight: normal; line-height: 1.3;">
+                      ${nameDiff}
+                      ${longDescDiff}
                     </div>
                   `;
                 }

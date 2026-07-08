@@ -42,6 +42,7 @@ class PrestoModule {
       const qty2 = row[6] !== undefined && row[6] !== null ? Number(row[6]) : 0;
       const price = row[8] !== undefined && row[8] !== null ? Number(row[8]) : 0;
       const total = row[10] !== undefined && row[10] !== null ? Number(row[10]) : 0;
+      const longDesc = row[11] !== undefined && row[11] !== null ? String(row[11]).trim() : '';
 
       // Check if it's a chapter: unit is empty or 'nan'
       const isChapter = (unit === '' || unit.toLowerCase() === 'nan');
@@ -53,7 +54,8 @@ class PrestoModule {
           'capitulo',
           desc,
           {
-            total: total
+            total: total,
+            longDesc: longDesc
           },
           null
         ));
@@ -69,7 +71,8 @@ class PrestoModule {
             qty_presupuesto: qty1,
             qty_medicion: qty2,
             price: price,
-            total: total
+            total: total,
+            longDesc: longDesc
           },
           currentChapterCode || 'ORFANAS' // fallback if no preceding chapter
         ));

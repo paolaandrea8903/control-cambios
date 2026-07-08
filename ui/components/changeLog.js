@@ -178,7 +178,8 @@ class ChangeLogComponent {
         const fields = chg.fieldName.map(f => {
           if (f === 'qty_medicion') return 'cantidad';
           if (f === 'price') return 'precio';
-          if (f === 'description' || f === 'name') return 'descripción';
+          if (f === 'description' || f === 'name') return 'resumen corto';
+          if (f === 'longDesc') return 'texto largo (pliego)';
           return f;
         });
         modDescription = `Cambio en: <b>${fields.join(', ')}</b>`;
@@ -193,12 +194,34 @@ class ChangeLogComponent {
       }
 
       let cellNameContent = chg.elementName;
-      if (chg.changeType === 'modified' && chg.fieldName.includes('name')) {
+      if (chg.changeType === 'modified' && (chg.fieldName.includes('name') || chg.fieldName.includes('longDesc'))) {
+        let nameDiff = '';
+        if (chg.fieldName.includes('name')) {
+          nameDiff = `
+            <div style="margin-bottom: 4px;">
+              <strong>Resumen Corto:</strong><br>
+              <span style="color: #ef4444; text-decoration: line-through;">V1: ${chg.oldValue.name}</span><br>
+              <span style="color: #10b981; font-weight: 600;">V2: ${chg.newValue.name}</span>
+            </div>
+          `;
+        }
+        
+        let longDescDiff = '';
+        if (chg.fieldName.includes('longDesc')) {
+          longDescDiff = `
+            <div>
+              <strong>Texto Largo / Pliego:</strong><br>
+              <span style="color: #ef4444; text-decoration: line-through; display: block; max-height: 50px; overflow: hidden; text-overflow: ellipsis;">V1: ${chg.oldValue.longDesc || '(Vacío)'}</span>
+              <span style="color: #10b981; display: block; font-weight: 600; max-height: 50px; overflow: hidden; text-overflow: ellipsis;">V2: ${chg.newValue.longDesc || '(Vacío)'}</span>
+            </div>
+          `;
+        }
+
         cellNameContent = `
           <div>${chg.elementName}</div>
-          <div style="font-size: 9.5px; color: #64748b; margin-top: 5px; padding: 4px 8px; background-color: var(--body-bg); border-radius: 4px; border-left: 3px solid var(--primary); text-decoration: none !important; font-weight: normal; line-height: 1.3;">
-            <span style="color: #ef4444; text-decoration: line-through; display: block; margin-bottom: 2px;">V1: ${chg.oldValue.name}</span>
-            <span style="color: #10b981; display: block; font-weight: 600;">V2: ${chg.newValue.name}</span>
+          <div style="font-size: 9.5px; color: #64748b; margin-top: 5px; padding: 6px 8px; background-color: var(--body-bg); border-radius: 4px; border-left: 3px solid var(--primary); text-decoration: none !important; font-weight: normal; line-height: 1.3;">
+            ${nameDiff}
+            ${longDescDiff}
           </div>
         `;
       }
