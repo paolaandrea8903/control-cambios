@@ -106,8 +106,14 @@ class PrestoModule {
       const total = row[colMapping.total] !== undefined && row[colMapping.total] !== null ? Number(row[colMapping.total]) : 0;
       const longDesc = colMapping.longDesc !== undefined && row[colMapping.longDesc] !== undefined && row[colMapping.longDesc] !== null ? String(row[colMapping.longDesc]).trim() : '';
 
-      // Check if it's a chapter: unit is empty or 'nan' or matches nature indicators
-      const isChapter = (unit === '' || unit.toLowerCase() === 'nan' || (row[1] && ['capitulo', 'capítulo'].includes(String(row[1]).toLowerCase().trim())));
+      // Check if it's a chapter: unit is empty or 'nan' AND has no unit price / quantity, or matches nature indicators
+      const isChapter = (
+        (unit === '' || unit.toLowerCase() === 'nan') &&
+        price === 0 &&
+        qty1 === 0 &&
+        qty2 === 0 &&
+        !(row[1] && String(row[1]).toLowerCase().trim().includes('partida'))
+      ) || (row[1] && ['capitulo', 'capítulo'].includes(String(row[1]).toLowerCase().trim()));
 
       if (isChapter) {
         currentChapterCode = code;

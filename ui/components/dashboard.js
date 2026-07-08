@@ -12,6 +12,24 @@ class DashboardComponent {
     const v2Total = this.calculateTotal(v2);
     const percentDev = v1Total !== 0 ? (netDeviation / v1Total) * 100 : 0;
 
+    // Programmatic Audit verification check
+    const calculatedDiff = v2Total - v1Total;
+    const discrepancy = Math.abs(netDeviation - calculatedDiff);
+    const isAuditPassed = discrepancy < 0.05; // float tolerance
+
+    const auditBadge = document.getElementById('stat-audit-badge');
+    if (auditBadge) {
+      if (isAuditPassed) {
+        auditBadge.style.backgroundColor = '#d1fae5';
+        auditBadge.style.color = '#065f46';
+        auditBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Auditoría: Verificada OK';
+      } else {
+        auditBadge.style.backgroundColor = '#fee2e2';
+        auditBadge.style.color = '#991b1b';
+        auditBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Discrepancia: ${this.formatCurrency(discrepancy)}`;
+      }
+    }
+
     // Update stats
     document.getElementById('stat-v1-total').textContent = this.formatCurrency(v1Total);
     document.getElementById('stat-v1-name').textContent = v1 ? v1.name : 'Presupuesto 1';
@@ -152,7 +170,7 @@ class DashboardComponent {
     });
 
     const sortedChaps = Array.from(chapMap.values())
-      .filter(c => c.id !== 'C.I.' && c.id !== 'C.E.') // only direct chapters in chart for better visibility
+      .filter(c => c.id !== 'C.I.' && c.id !== 'C.E.' && !c.id.includes('.')) // only Level 1 main chapters in chart
       .sort((a, b) => {
         const na = parseInt(a.id);
         const nb = parseInt(b.id);
