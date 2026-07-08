@@ -61,10 +61,9 @@ class DashboardComponent {
   }
 
   calculateTotal(version) {
-    // Return direct + indirect sums (Grand total)
-    // Find all chapters and sum them
-    const chapters = version.getElementsByType('capitulo');
-    return chapters.reduce((sum, chap) => sum + (chap.data.total || 0), 0);
+    // Return direct + indirect sums (Grand total) by summing all partidas (leaf nodes)
+    const partidas = version.getElementsByType('partida');
+    return partidas.reduce((sum, part) => sum + (part.data.total || 0), 0);
   }
 
   formatCurrency(value) {

@@ -14,11 +14,73 @@ class PrestoModule {
   parse(fileData, options = {}) {
     let rows = [];
     if (Array.isArray(fileData)) {
-      rows = fileData;
+      rows = [...fileData]; // clone to avoid mutating original
     } else {
-      // In case we receive an ArrayBuffer, caller should parse it with SheetJS.
-      // But we will handle it in the uiManager or loader.
       throw new Error("presto-budget module expects parsed 2D row array.");
+    }
+
+    // Default column mapping (fallback for the first Excel format)
+    let colMapping = {
+      code: 0,
+      unit: 2,
+      desc: 3,
+      multiplier: 4,
+      qty1: 5,
+      qty2: 6,
+      price: 8,
+      total: 10,
+      longDesc: 11
+    };
+
+    // Scan the first 15 rows to see if there is a header row to match columns dynamically
+    for (let i = 0; i < Math.min(15, rows.length); i++) {
+      const row = rows[i];
+      if (!row || row.length < 4) continue;
+      
+      let foundCode = -1;
+      let foundDesc = -1;
+      let foundUnit = -1;
+      let foundPrice = -1;
+      let foundTotal = -1;
+      let foundQty = -1;
+      let foundLongDesc = -1;
+
+      for (let c = 0; c < row.length; c++) {
+        const val = String(row[c] || '').toLowerCase().trim();
+        if (val === 'código' || val === 'cod.' || val === 'cód. presupuesto' || val === 'codigo' || val === 'cód.') {
+          foundCode = c;
+        } else if (val === 'resumen' || val === 'descripción' || val === 'descripcion' || val === 'concepto' || val === 'concepto / elemento') {
+          foundDesc = c;
+        } else if (val === 'ud' || val === 'unidad' || val === 'unidades') {
+          foundUnit = c;
+        } else if (val === 'precio' || val === 'prpres' || val === 'precio pres.' || val === 'pr. pres.' || val === 'precios' || val === 'precio unitario') {
+          foundPrice = c;
+        } else if (val === 'importe' || val === 'imppres' || val === 'total' || val === 'imp. pres.' || val === 'importe pres.' || val === 'importe total') {
+          foundTotal = c;
+        } else if (val === 'medición' || val === 'medicion' || val === 'cantidad' || val === 'canpres' || val === 'cantidades') {
+          foundQty = c;
+        } else if (val === 'texto' || val === 'pliego' || val === 'texto largo' || val === 'ctexto' || val === 'texto_largo') {
+          foundLongDesc = c;
+        }
+      }
+
+      // If we found at least Code and Description, we consider this a valid header row!
+      if (foundCode !== -1 && foundDesc !== -1) {
+        colMapping.code = foundCode;
+        if (foundUnit !== -1) colMapping.unit = foundUnit;
+        if (foundDesc !== -1) colMapping.desc = foundDesc;
+        if (foundPrice !== -1) colMapping.price = foundPrice;
+        if (foundTotal !== -1) colMapping.total = foundTotal;
+        if (foundQty !== -1) {
+          colMapping.qty1 = foundQty;
+          colMapping.qty2 = foundQty;
+        }
+        if (foundLongDesc !== -1) colMapping.longDesc = foundLongDesc;
+        
+        // Remove the header row and everything preceding it from our data rows
+        rows.splice(0, i + 1);
+        break;
+      }
     }
 
     const elements = [];
@@ -28,24 +90,24 @@ class PrestoModule {
       const row = rows[idx];
       if (!row || row.length === 0) continue;
 
-      // Extract code (Col 0)
-      let code = row[0] !== undefined && row[0] !== null ? String(row[0]).trim() : '';
-      if (code === '' || code.toLowerCase() === 'nan') {
+      // Extract code
+      let code = row[colMapping.code] !== undefined && row[colMapping.code] !== null ? String(row[colMapping.code]).trim() : '';
+      if (code === '' || code.toLowerCase() === 'nan' || code.toLowerCase() === 'código' || code.toLowerCase() === 'codigo') {
         continue;
       }
 
-      // Extract details
-      const unit = row[2] !== undefined && row[2] !== null ? String(row[2]).trim() : '';
-      const desc = row[3] !== undefined && row[3] !== null ? String(row[3]).trim() : '';
-      const multiplier = row[4] !== undefined && row[4] !== null ? Number(row[4]) : 1;
-      const qty1 = row[5] !== undefined && row[5] !== null ? Number(row[5]) : 0;
-      const qty2 = row[6] !== undefined && row[6] !== null ? Number(row[6]) : 0;
-      const price = row[8] !== undefined && row[8] !== null ? Number(row[8]) : 0;
-      const total = row[10] !== undefined && row[10] !== null ? Number(row[10]) : 0;
-      const longDesc = row[11] !== undefined && row[11] !== null ? String(row[11]).trim() : '';
+      // Extract details using mapped columns
+      const unit = row[colMapping.unit] !== undefined && row[colMapping.unit] !== null ? String(row[colMapping.unit]).trim() : '';
+      const desc = row[colMapping.desc] !== undefined && row[colMapping.desc] !== null ? String(row[colMapping.desc]).trim() : '';
+      const multiplier = colMapping.multiplier !== undefined && row[colMapping.multiplier] !== undefined && row[colMapping.multiplier] !== null ? Number(row[colMapping.multiplier]) : 1;
+      const qty1 = row[colMapping.qty1] !== undefined && row[colMapping.qty1] !== null ? Number(row[colMapping.qty1]) : 0;
+      const qty2 = colMapping.qty2 !== undefined && row[colMapping.qty2] !== undefined && row[colMapping.qty2] !== null ? Number(row[colMapping.qty2]) : qty1;
+      const price = row[colMapping.price] !== undefined && row[colMapping.price] !== null ? Number(row[colMapping.price]) : 0;
+      const total = row[colMapping.total] !== undefined && row[colMapping.total] !== null ? Number(row[colMapping.total]) : 0;
+      const longDesc = colMapping.longDesc !== undefined && row[colMapping.longDesc] !== undefined && row[colMapping.longDesc] !== null ? String(row[colMapping.longDesc]).trim() : '';
 
-      // Check if it's a chapter: unit is empty or 'nan'
-      const isChapter = (unit === '' || unit.toLowerCase() === 'nan');
+      // Check if it's a chapter: unit is empty or 'nan' or matches nature indicators
+      const isChapter = (unit === '' || unit.toLowerCase() === 'nan' || (row[1] && ['capitulo', 'capítulo'].includes(String(row[1]).toLowerCase().trim())));
 
       if (isChapter) {
         currentChapterCode = code;
