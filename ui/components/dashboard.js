@@ -83,10 +83,11 @@ class DashboardComponent {
     const chapters = version.getElementsByType('capitulo');
     
     // 1. Filter to find Level 1 chapters:
-    // Exclude 'ORFANAS' and exclude sub-chapters (codes containing a dot '.')
+    // Exclude 'ORFANAS' and exclude sub-chapters (codes containing a dot '.'), but keep C.I. and C.E.
     const level1Chaps = chapters.filter(chap => {
       const code = chap.id;
       if (code === 'ORFANAS') return false;
+      if (code === 'C.I.' || code === 'C.E.') return true;
       if (code.includes('.')) return false;
       return true;
     });

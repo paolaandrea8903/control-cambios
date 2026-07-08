@@ -197,8 +197,18 @@ class PrestoModule {
         : '';
       const isBasicComponent = ['material', 'mano de obra', 'maquinaria', '1', '2', '3'].includes(nature);
 
-      // Check if it's a chapter: unit is empty or 'nan' or matches nature indicators
-      const isChapter = (unit === '' || unit.toLowerCase() === 'nan' || ['capitulo', 'capítulo'].includes(nature));
+      // Check if it's a chapter: unit is empty or 'nan'
+      let isChapter = false;
+      if (unit === '' || unit.toLowerCase() === 'nan' || ['capitulo', 'capítulo'].includes(nature)) {
+        // True chapters/subchapters have empty units but exclude partidas with empty units (like test items 207, 6082)
+        const isCIorCE = (code === 'C.I.' || code === 'C.E.');
+        const isSequentialInt = /^\d+$/.test(code) && (currentChapterCode === null || Math.abs(parseInt(code) - parseInt(currentChapterCode)) <= 2 || parseInt(code) <= 50);
+        const isHierarchical = currentChapterCode && (code.startsWith(currentChapterCode) || currentChapterCode.startsWith(code.split('.')[0]));
+        
+        if (isCIorCE || isSequentialInt || isHierarchical || (price === total && total > 0 && qty1 === 1) || ['capitulo', 'capítulo'].includes(nature)) {
+          isChapter = true;
+        }
+      }
 
       if (isChapter) {
         currentChapterCode = code;
