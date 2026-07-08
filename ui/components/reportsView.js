@@ -669,6 +669,7 @@ class ReportsViewComponent {
           <link rel="preconnect" href="https://fonts.googleapis.com">
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
           <style>
             body {
               font-family: 'Outfit', sans-serif;
@@ -701,16 +702,17 @@ class ReportsViewComponent {
         </head>
         <body>
           ${previewContent}
-          <script>
-            window.onload = function() {
-              window.print();
-              window.close();
-            };
-          </script>
         </body>
       </html>
     `);
     printWindow.document.close();
+
+    // Use a delay in the parent window to allow the browser to parse, reflow, and render the popup content before opening the print dialog
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }, 450);
   }
 
   formatCurrency(value) {
