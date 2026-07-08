@@ -171,6 +171,31 @@ class VersionHistoryComponent {
     const projectName = document.getElementById('project-name-input').value;
     const authorName = document.getElementById('author-name-input').value;
 
+    const modal = document.getElementById('compare-mode-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      
+      const btnConfirm = document.getElementById('btn-confirm-modal');
+      const btnCancel = document.getElementById('btn-cancel-modal');
+      
+      btnConfirm.onclick = (e) => {
+        e.preventDefault();
+        modal.style.display = 'none';
+        const compareMode = document.querySelector('input[name="compare-mode-radio-modal"]:checked')?.value || 'objetivo';
+        this.executeAnalysis(projectName, authorName, compareMode);
+      };
+      
+      btnCancel.onclick = (e) => {
+        e.preventDefault();
+        modal.style.display = 'none';
+      };
+    } else {
+      // Fallback
+      this.executeAnalysis(projectName, authorName, 'objetivo');
+    }
+  }
+
+  async executeAnalysis(projectName, authorName, compareMode) {
     this.uiManager.showLoader(true);
 
     setTimeout(async () => {
@@ -193,7 +218,7 @@ class VersionHistoryComponent {
           const dataV1 = new Uint8Array(this.fileDataV1);
           const wb1 = XLSX.read(dataV1, { type: 'array' });
           const rowsV1 = XLSX.utils.sheet_to_json(wb1.Sheets[wb1.SheetNames[0]], { header: 1 });
-          elV1 = prestoMod.parse(rowsV1);
+          elV1 = prestoMod.parse(rowsV1, { compareType: compareMode });
         }
         elV1.forEach(el => v1.addElement(el));
 
@@ -208,7 +233,7 @@ class VersionHistoryComponent {
           const dataV2 = new Uint8Array(this.fileDataV2);
           const wb2 = XLSX.read(dataV2, { type: 'array' });
           const rowsV2 = XLSX.utils.sheet_to_json(wb2.Sheets[wb2.SheetNames[0]], { header: 1 });
-          elV2 = prestoMod.parse(rowsV2);
+          elV2 = prestoMod.parse(rowsV2, { compareType: compareMode });
         }
         elV2.forEach(el => v2.addElement(el));
 

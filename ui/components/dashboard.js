@@ -79,9 +79,32 @@ class DashboardComponent {
   }
 
   calculateTotal(version) {
-    // Return direct + indirect sums (Grand total) by summing all partidas (leaf nodes)
-    const partidas = version.getElementsByType('partida');
-    return partidas.reduce((sum, part) => sum + (part.data.total || 0), 0);
+    // Return direct + indirect sums (Grand total) in a truly universal way
+    const chapters = version.getElementsByType('capitulo');
+    
+    // 1. Filter to find Level 1 chapters:
+    // Exclude 'ORFANAS' and exclude sub-chapters (codes containing a dot '.')
+    const level1Chaps = chapters.filter(chap => {
+      const code = chap.id;
+      if (code === 'ORFANAS') return false;
+      if (code.includes('.')) return false;
+      return true;
+    });
+
+    // 2. Identify and prevent double-counting of the project root concept row
+    // Root concept row is a chapter whose total equals the sum of all other chapters combined
+    const totals = level1Chaps.map(c => c.data.total || 0);
+    const maxTotal = Math.max(...totals, 0);
+    const sumOthers = totals.reduce((sum, t) => sum + t, 0) - maxTotal;
+    
+    // If there is a root chapter representing the sum of others (within 1.5% tolerance for rounding),
+    // then that maximum value is the true grand total of the project!
+    if (maxTotal > 0 && Math.abs(maxTotal - sumOthers) / maxTotal < 0.015) {
+      return maxTotal;
+    }
+    
+    // Otherwise, the grand total is the sum of all Level 1 chapters (including C.I. / C.E.!)
+    return totals.reduce((sum, t) => sum + t, 0);
   }
 
   formatCurrency(value) {
