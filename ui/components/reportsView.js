@@ -147,11 +147,21 @@ class ReportsViewComponent {
                 const typeText = chg.changeType === 'added' ? 'AÑADIDO' : chg.changeType === 'deleted' ? 'ELIMINADO' : 'MODIFICADO';
                 const typeColor = chg.changeType === 'added' ? '#10b981' : chg.changeType === 'deleted' ? '#ef4444' : '#f59e0b';
                 const rowClass = chg.impact.economic > 0 ? 'color: #dc2626;' : chg.impact.economic < 0 ? 'color: #16a34a;' : '';
+                let cellNameContent = chg.elementName;
+                if (chg.changeType === 'modified' && chg.fieldName.includes('name')) {
+                  cellNameContent = `
+                    <div>${chg.elementName}</div>
+                    <div style="font-size: 9px; color: #64748b; margin-top: 4px; padding: 4px 6px; background-color: #f8fafc; border-radius: 4px; border-left: 2px solid #6366f1; font-weight: normal; line-height: 1.3;">
+                      <span style="color: #dc2626; text-decoration: line-through; display: block; margin-bottom: 2px;">V1: ${chg.oldValue.name}</span>
+                      <span style="color: #16a34a; display: block; font-weight: bold;">V2: ${chg.newValue.name}</span>
+                    </div>
+                  `;
+                }
                 return `
                   <tr style="border-bottom: 1px solid #e2e8f0; vertical-align: top;">
                     <td style="padding: 8px 10px; font-family: monospace; font-weight: bold;">${chg.elementId}</td>
                     <td style="padding: 8px 10px; font-weight: 700; color: ${typeColor}; font-size: 9px; letter-spacing: 0.3px;">${typeText}</td>
-                    <td style="padding: 8px 10px; font-weight: 500;">${chg.elementName}</td>
+                    <td style="padding: 8px 10px; font-weight: 500;">${cellNameContent}</td>
                     <td style="padding: 8px 10px; font-family: monospace; text-align: right; font-weight: bold; ${rowClass}">${chg.impact.economic >= 0 ? '+' : ''}${this.formatCurrency(chg.impact.economic)}</td>
                     <td style="padding: 8px 10px; color: #475569; font-size: 10px; line-height: 1.4;">${chg.aiExplanation}</td>
                   </tr>

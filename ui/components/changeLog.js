@@ -107,7 +107,11 @@ class ChangeLogComponent {
 
     // Filter by change type
     if (this.filters.type !== 'all') {
-      filtered = filtered.filter(c => c.changeType === this.filters.type);
+      if (this.filters.type === 'scope') {
+        filtered = filtered.filter(c => c.changeType === 'modified' && c.fieldName.includes('name'));
+      } else {
+        filtered = filtered.filter(c => c.changeType === this.filters.type);
+      }
     }
 
     // Filter by element type
@@ -188,11 +192,22 @@ class ChangeLogComponent {
         schedText = `<i class="fa-solid fa-bolt text-success"></i> <span class="text-success">${chg.impact.schedule}</span>`;
       }
 
+      let cellNameContent = chg.elementName;
+      if (chg.changeType === 'modified' && chg.fieldName.includes('name')) {
+        cellNameContent = `
+          <div>${chg.elementName}</div>
+          <div style="font-size: 9.5px; color: #64748b; margin-top: 5px; padding: 4px 8px; background-color: var(--body-bg); border-radius: 4px; border-left: 3px solid var(--primary); text-decoration: none !important; font-weight: normal; line-height: 1.3;">
+            <span style="color: #ef4444; text-decoration: line-through; display: block; margin-bottom: 2px;">V1: ${chg.oldValue.name}</span>
+            <span style="color: #10b981; display: block; font-weight: 600;">V2: ${chg.newValue.name}</span>
+          </div>
+        `;
+      }
+
       tr.innerHTML = `
         <td class="font-monospace text-muted" style="font-size: 11px;">${chg.id}</td>
         <td>${typeBadge}</td>
         <td class="node-code">${chg.elementId}</td>
-        <td style="max-width: 250px; font-weight: 500;">${chg.elementName}</td>
+        <td style="max-width: 250px; font-weight: 500;">${cellNameContent}</td>
         <td>${modDescription}</td>
         <td class="${econClass} font-monospace fw-bold text-end">${econText}</td>
         <td>${schedText}</td>

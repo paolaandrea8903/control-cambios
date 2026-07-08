@@ -31,7 +31,7 @@ class ChangeEngine {
       if (!sourceEl && targetEl) {
         // Element was ADDED
         const economicImpact = targetEl.data.total || 0;
-        changes.push(new Change({
+        const change = new Change({
           id: generateId(),
           elementType: type,
           elementId: id,
@@ -56,11 +56,21 @@ class ChangeEngine {
           },
           user,
           confidence: 1.0
-        }));
+        });
+
+        if (typeof AIEngine !== 'undefined') {
+          const chapter = targetVersion.getElement('capitulo', targetEl.parentId);
+          const chapterName = chapter ? chapter.name : '';
+          const aiResult = AIEngine.analyzeChange(change, { chapterName });
+          change.aiExplanation = aiResult.aiExplanation;
+          change.impact = aiResult.impact;
+        }
+
+        changes.push(change);
       } else if (sourceEl && !targetEl) {
         // Element was DELETED
         const economicImpact = -(sourceEl.data.total || 0);
-        changes.push(new Change({
+        const change = new Change({
           id: generateId(),
           elementType: type,
           elementId: id,
@@ -85,7 +95,17 @@ class ChangeEngine {
           },
           user,
           confidence: 1.0
-        }));
+        });
+
+        if (typeof AIEngine !== 'undefined') {
+          const chapter = sourceVersion.getElement('capitulo', sourceEl.parentId);
+          const chapterName = chapter ? chapter.name : '';
+          const aiResult = AIEngine.analyzeChange(change, { chapterName });
+          change.aiExplanation = aiResult.aiExplanation;
+          change.impact = aiResult.impact;
+        }
+
+        changes.push(change);
       } else if (sourceEl && targetEl) {
         // Element exists in both, check for modifications
         const modifiedFields = [];
@@ -133,7 +153,7 @@ class ChangeEngine {
         if (modifiedFields.length > 0) {
           const economicImpact = (targetEl.data.total || 0) - (sourceEl.data.total || 0);
           
-          changes.push(new Change({
+          const change = new Change({
             id: generateId(),
             elementType: type,
             elementId: id,
@@ -154,7 +174,18 @@ class ChangeEngine {
             },
             user,
             confidence: 1.0
-          }));
+          });
+
+          if (typeof AIEngine !== 'undefined') {
+            const chapId = targetEl.parentId || sourceEl.parentId;
+            const chapter = targetVersion.getElement('capitulo', chapId) || (sourceVersion ? sourceVersion.getElement('capitulo', chapId) : null);
+            const chapterName = chapter ? chapter.name : '';
+            const aiResult = AIEngine.analyzeChange(change, { chapterName });
+            change.aiExplanation = aiResult.aiExplanation;
+            change.impact = aiResult.impact;
+          }
+
+          changes.push(change);
         }
       }
     }

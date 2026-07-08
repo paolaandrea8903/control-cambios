@@ -258,11 +258,16 @@ class ReportGenerator {
       const econVal = chg.impact.economic;
       const econText = `${econVal >= 0 ? '+' : ''}${econVal.toFixed(2)}`;
 
+      let cellNameContent = chg.elementName;
+      if (chg.changeType === 'modified' && chg.fieldName.includes('name')) {
+        cellNameContent += ` [CAMBIO DE ALCANCE - V1: "${chg.oldValue.name}" -> V2: "${chg.newValue.name}"]`;
+      }
+
       html += `
         <tr>
           <td style="mso-number-format:'\\@'; font-family: monospace;">${chg.elementId}</td>
           <td class="${rowClass} text-center">${typeText}</td>
-          <td>${chg.elementName}</td>
+          <td>${cellNameContent}</td>
           <td class="number fw-bold">${econText}</td>
           <td style="color: #475569;">${chg.aiExplanation}</td>
         </tr>
