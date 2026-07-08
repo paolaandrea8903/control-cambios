@@ -183,19 +183,33 @@ class VersionHistoryComponent {
         const project = this.uiManager.revisionManager.createProject('p01', projectName);
 
         // 2. Parse V1
-        const dataV1 = new Uint8Array(this.fileDataV1);
-        const wb1 = XLSX.read(dataV1, { type: 'array' });
-        const rowsV1 = XLSX.utils.sheet_to_json(wb1.Sheets[wb1.SheetNames[0]], { header: 1 });
         const v1 = new Version('v1', 'Presupuesto Base (Original)', new Date().toISOString().split('T')[0], authorName, 'Presupuesto inicial de comparación.');
-        const elV1 = prestoMod.parse(rowsV1);
+        let elV1;
+        if (this.fileNameV1.toLowerCase().endsWith('.bc3')) {
+          const decoder = new TextDecoder('windows-1252');
+          const textV1 = decoder.decode(this.fileDataV1);
+          elV1 = prestoMod.parseBC3(textV1);
+        } else {
+          const dataV1 = new Uint8Array(this.fileDataV1);
+          const wb1 = XLSX.read(dataV1, { type: 'array' });
+          const rowsV1 = XLSX.utils.sheet_to_json(wb1.Sheets[wb1.SheetNames[0]], { header: 1 });
+          elV1 = prestoMod.parse(rowsV1);
+        }
         elV1.forEach(el => v1.addElement(el));
 
         // 3. Parse V2
-        const dataV2 = new Uint8Array(this.fileDataV2);
-        const wb2 = XLSX.read(dataV2, { type: 'array' });
-        const rowsV2 = XLSX.utils.sheet_to_json(wb2.Sheets[wb2.SheetNames[0]], { header: 1 });
         const v2 = new Version('v2', 'Presupuesto Revisado', new Date().toISOString().split('T')[0], authorName, 'Revisión cargada por el usuario.');
-        const elV2 = prestoMod.parse(rowsV2);
+        let elV2;
+        if (this.fileNameV2.toLowerCase().endsWith('.bc3')) {
+          const decoder = new TextDecoder('windows-1252');
+          const textV2 = decoder.decode(this.fileDataV2);
+          elV2 = prestoMod.parseBC3(textV2);
+        } else {
+          const dataV2 = new Uint8Array(this.fileDataV2);
+          const wb2 = XLSX.read(dataV2, { type: 'array' });
+          const rowsV2 = XLSX.utils.sheet_to_json(wb2.Sheets[wb2.SheetNames[0]], { header: 1 });
+          elV2 = prestoMod.parse(rowsV2);
+        }
         elV2.forEach(el => v2.addElement(el));
 
         // 4. Add to project

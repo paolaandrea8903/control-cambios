@@ -81,4 +81,104 @@ class PrestoModule {
 
     return elements;
   }
+
+  /**
+   * Parses standard FIEBDC-3 (.bc3) file content and extracts Elements.
+   * @param {string} text Raw text content of the BC3 file
+   * @returns {Element[]} Array of generic Element objects
+   */
+  parseBC3(text) {
+    const lines = text.split(/\r?\n/);
+    const concepts = new Map(); // code -> { code, unit, desc, price, longDesc, isChapter }
+    const relations = []; // { parent, child, factor, qty }
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line.startsWith('~')) continue;
+      
+      const parts = line.substring(1).split('|');
+      const type = parts[0];
+
+      if (type === 'C') {
+        const code = parts[1] ? parts[1].trim() : '';
+        const unit = parts[2] ? parts[2].trim() : '';
+        const desc = parts[3] ? parts[3].trim() : '';
+        const price = parts[4] ? parseFloat(parts[4].replace(',', '.')) || 0 : 0;
+        
+        if (code) {
+          concepts.set(code, {
+            code,
+            unit,
+            desc,
+            price,
+            longDesc: '',
+            isChapter: (unit === '' || unit.toLowerCase() === 'nan')
+          });
+        }
+      } else if (type === 'D') {
+        const code = parts[1] ? parts[1].trim() : '';
+        const textContent = parts.slice(2).join('|').trim();
+        const cleanText = textContent.replace(/\\/g, '\n').trim();
+        if (code && concepts.has(code)) {
+          concepts.get(code).longDesc = cleanText;
+        }
+      } else if (type === 'R') {
+        const parent = parts[1] ? parts[1].trim() : '';
+        const child = parts[2] ? parts[2].trim() : '';
+        const factor = parts[3] ? parseFloat(parts[3].replace(',', '.')) || 1 : 1;
+        const qty = parts[4] ? parseFloat(parts[4].replace(',', '.')) || 0 : 0;
+        if (parent && child) {
+          relations.push({ parent, child, factor, qty });
+        }
+      }
+    }
+
+    const childToParent = new Map();
+    const childQuantities = new Map();
+    const childFactors = new Map();
+
+    for (const rel of relations) {
+      childToParent.set(rel.child, rel.parent);
+      childQuantities.set(rel.child, rel.qty);
+      childFactors.set(rel.child, rel.factor);
+    }
+
+    const elements = [];
+    for (const [code, concept] of concepts.entries()) {
+      const parentId = childToParent.get(code) || null;
+      const qty = childQuantities.get(code) !== undefined ? childQuantities.get(code) : 1;
+      const factor = childFactors.get(code) !== undefined ? childFactors.get(code) : 1;
+
+      if (concept.isChapter) {
+        elements.push(new Element(
+          code,
+          'capitulo',
+          concept.desc,
+          {
+            total: 0 // Will be calculated by system summary totals
+          },
+          parentId
+        ));
+      } else {
+        const total = qty * concept.price;
+        elements.push(new Element(
+          code,
+          'partida',
+          concept.desc,
+          {
+            unit: concept.unit,
+            multiplier: factor,
+            qty_presupuesto: qty,
+            qty_medicion: qty,
+            price: concept.price,
+            total: total,
+            longDesc: concept.longDesc
+          },
+          parentId || 'ORFANAS'
+        ));
+      }
+    }
+
+    return elements;
+  }
 }
