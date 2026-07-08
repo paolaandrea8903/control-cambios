@@ -36,6 +36,7 @@ class PrestoModule {
     };
 
     // Scan the first 15 rows to see if there is a header row to match columns dynamically
+    let headerRowIndex = -1;
     for (let i = 0; i < Math.min(15, rows.length); i++) {
       const row = rows[i];
       if (!row || row.length < 4) continue;
@@ -97,6 +98,7 @@ class PrestoModule {
 
       // If we found at least Code and Description, we consider this a valid header row!
       if (foundCode !== -1 && foundDesc !== -1) {
+        headerRowIndex = i;
         colMapping.code = foundCode;
         if (foundUnit !== -1) colMapping.unit = foundUnit;
         if (foundDesc !== -1) colMapping.desc = foundDesc;
@@ -108,10 +110,61 @@ class PrestoModule {
           colMapping.qty2 = foundQty;
         }
         if (foundLongDesc !== -1) colMapping.longDesc = foundLongDesc;
-        
-        // Remove the header row and everything preceding it from our data rows
-        rows.splice(0, i + 1);
         break;
+      }
+    }
+
+    if (headerRowIndex !== -1) {
+      // Remove the header row and everything preceding it from our data rows
+      rows.splice(0, headerRowIndex + 1);
+    } else {
+      // 2. NO header row found! Let's detect columns using mathematical validation on the first few rows!
+      let candidateRows = [];
+      for (let i = 0; i < Math.min(50, rows.length); i++) {
+        const row = rows[i];
+        if (!row || row.length < 8) continue;
+        const unit = String(row[2] || '').trim().toLowerCase();
+        if (unit !== '' && unit !== 'nan' && unit.length <= 4) {
+          candidateRows.push(row);
+        }
+      }
+
+      if (candidateRows.length > 0) {
+        let match1 = 0;
+        let match2 = 0;
+
+        candidateRows.forEach(row => {
+          const q1 = Number(row[5] || 0);
+          const q2 = Number(row[6] || 0);
+          const p1 = Number(row[7] || 0);
+          const p2 = Number(row[8] || 0);
+          const t1 = Number(row[9] || 0);
+          const t2 = Number(row[10] || 0);
+
+          if (q1 > 0 && p1 > 0 && Math.abs(q1 * p1 - t1) / t1 < 0.015) match1++;
+          if (q2 > 0 && p2 > 0 && Math.abs(q2 * p2 - t2) / t2 < 0.015) match2++;
+        });
+
+        // If at least 40% of candidate rows match this standard layout:
+        if (match1 > candidateRows.length * 0.4 || match2 > candidateRows.length * 0.4) {
+          colMapping.code = 0;
+          colMapping.unit = 2;
+          colMapping.desc = 3;
+          colMapping.multiplier = 4;
+          
+          if (compareType === 'presupuesto') {
+            colMapping.qty1 = 5;
+            colMapping.qty2 = 5;
+            colMapping.price = 7;
+            colMapping.total = 9;
+          } else {
+            // compareType === 'objetivo'
+            colMapping.qty1 = 6;
+            colMapping.qty2 = 6;
+            colMapping.price = 8;
+            colMapping.total = 10;
+          }
+        }
       }
     }
 
