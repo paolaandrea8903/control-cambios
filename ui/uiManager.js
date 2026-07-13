@@ -22,6 +22,7 @@ class UIManager {
 
     this.setupViewNavigation();
     this.setupProjectNameSync();
+    this.setupResetButton();
   }
 
   setupViewNavigation() {
@@ -88,6 +89,19 @@ class UIManager {
         subtitle.textContent = 'Análisis técnico y comparación visual de planos de obra';
         break;
     }
+
+    // Dynamic sidebar and header badges updates
+    const sidebarBadge = document.querySelector('.sidebar-header .badge');
+    if (sidebarBadge) {
+      if (viewId === 'blueprints') {
+        sidebarBadge.textContent = 'Módulo Planos v1.0';
+        sidebarBadge.style.backgroundColor = 'var(--primary)';
+      } else {
+        sidebarBadge.textContent = 'Módulo Presupuestos v1.0';
+        sidebarBadge.style.backgroundColor = '';
+      }
+    }
+    this.updateHeaderBadges();
 
     // Refresh active view rendering
     this.refreshActiveView();
@@ -159,6 +173,50 @@ class UIManager {
           }
         }
       });
+    }
+  }
+
+  setupResetButton() {
+    const btnReset = document.getElementById('btn-clear-analysis');
+    if (btnReset) {
+      btnReset.onclick = () => {
+        if (this.activeView === 'blueprints') {
+          if (confirm('¿Estás seguro de que deseas vaciar los planos actuales? Se limpiará el visor y los archivos cargados.')) {
+            this.components.blueprints.clearAll();
+          }
+        } else {
+          if (confirm('¿Estás seguro de que deseas iniciar un nuevo análisis de presupuesto? Se borrarán los datos actuales de la pantalla.')) {
+            this.components.history.clearAll();
+            this.showView('history');
+          }
+        }
+      };
+    }
+  }
+
+  updateHeaderBadges() {
+    const srcBadge = document.getElementById('src-version-badge');
+    const tgtBadge = document.getElementById('tgt-version-badge');
+    if (!srcBadge || !tgtBadge) return;
+    
+    if (this.activeView === 'blueprints') {
+      const bp = this.components.blueprints;
+      srcBadge.textContent = bp.v1File ? bp.v1File.name : 'Plano V1 (No cargado)';
+      tgtBadge.textContent = bp.v2File ? bp.v2File.name : 'Plano V2 (No cargado)';
+    } else {
+      const project = this.revisionManager.getCurrentProject();
+      if (project) {
+        const versions = project.getSortedVersions();
+        if (versions.length > 0) {
+          const v1 = versions[0];
+          const v2 = versions[versions.length - 1];
+          srcBadge.textContent = `${v1.name} (V1)`;
+          tgtBadge.textContent = `${v2.name} (V${versions.length})`;
+        } else {
+          srcBadge.textContent = 'Presupuesto 1 (Original)';
+          tgtBadge.textContent = 'Presupuesto 2 (Revisado)';
+        }
+      }
     }
   }
 }

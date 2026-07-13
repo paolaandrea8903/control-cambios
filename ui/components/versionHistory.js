@@ -13,17 +13,6 @@ class VersionHistoryComponent {
   }
 
   setupListeners() {
-    // Top bar reset button
-    const btnReset = document.getElementById('btn-clear-analysis');
-    if (btnReset) {
-      btnReset.onclick = () => {
-        if (confirm('¿Estás seguro de que deseas iniciar un nuevo análisis? Se borrarán los datos actuales de la pantalla.')) {
-          this.clearAll();
-          this.uiManager.showView('history');
-        }
-      };
-    }
-
     // Bind V1 upload slot
     this.bindUploadSlot('v1');
 

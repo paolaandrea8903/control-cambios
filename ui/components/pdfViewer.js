@@ -151,6 +151,7 @@ class PdfViewerComponent {
       this.v2File = file;
       document.getElementById('bp-name-v2').textContent = file.name;
     }
+    this.uiManager.updateHeaderBadges();
   }
 
   async runBlueprintComparison() {
@@ -718,5 +719,52 @@ class PdfViewerComponent {
       this.updatePaginationUI();
       this.updateVisorRendering();
     });
+  }
+
+  clearAll() {
+    this.pdfV1 = null;
+    this.pdfV2 = null;
+    this.v1File = null;
+    this.v2File = null;
+    this.currentPage = 1;
+    this.numPages = 1;
+    this.isComparing = false;
+    this.detectedChanges = [];
+    this.pageMapping = {};
+    
+    // Clear dropzone text stamps
+    document.getElementById('bp-name-v1').textContent = 'Plano Origen V1';
+    document.getElementById('bp-name-v2').textContent = 'Plano Destino V2';
+    document.getElementById('bp-page-indicator').textContent = 'Pág: --/--';
+    document.getElementById('bp-changes-count').textContent = '0';
+    document.getElementById('bp-changes-list').innerHTML = `
+      <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 30px;">
+        Carga los planos para listar variaciones
+      </div>
+    `;
+    
+    // Clear canvas layouts
+    if (this.canvasV1 && this.canvasV2 && this.canvasDiff) {
+      const ctx1 = this.canvasV1.getContext('2d');
+      const ctx2 = this.canvasV2.getContext('2d');
+      const ctxDiff = this.canvasDiff.getContext('2d');
+      ctx1.clearRect(0, 0, this.canvasV1.width, this.canvasV1.height);
+      ctx2.clearRect(0, 0, this.canvasV2.width, this.canvasV2.height);
+      ctxDiff.clearRect(0, 0, this.canvasDiff.width, this.canvasDiff.height);
+      
+      this.canvasV1.style.display = 'none';
+      this.canvasV2.style.display = 'none';
+      this.canvasDiff.style.display = 'block';
+    }
+    
+    document.getElementById('bp-clouds-overlay').innerHTML = '';
+    document.getElementById('btn-bp-prev-page').disabled = true;
+    document.getElementById('btn-bp-next-page').disabled = true;
+    
+    // Show visual help prompt
+    document.getElementById('bp-viewer-prompt').style.display = 'block';
+    
+    // Update headers in UIManager
+    this.uiManager.updateHeaderBadges();
   }
 }
