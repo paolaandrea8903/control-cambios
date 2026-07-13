@@ -141,10 +141,14 @@ class UIManager {
     }
   }
 
-  showLoader(show) {
+  showLoader(show, customText = null) {
     const loader = document.getElementById('loader');
+    const loaderText = document.getElementById('loader-text');
     if (loader) {
       if (show) {
+        if (loaderText) {
+          loaderText.textContent = customText || 'Analizando presupuestos con IA...';
+        }
         loader.classList.remove('hidden');
       } else {
         loader.classList.add('hidden');

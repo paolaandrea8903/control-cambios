@@ -110,7 +110,7 @@ class PdfViewerComponent {
           this.pageMapping[this.currentPage] = parseInt(val, 10);
         }
         
-        this.uiManager.showLoader(true);
+        this.uiManager.showLoader(true, "Comparando planos y alineando páginas...");
         setTimeout(async () => {
           try {
             await this.compareAndRenderPage();
@@ -184,7 +184,7 @@ class PdfViewerComponent {
       return;
     }
 
-    this.uiManager.showLoader(true);
+    this.uiManager.showLoader(true, "Analizando y procesando planos con IA...");
     document.getElementById('bp-viewer-prompt').style.display = 'none';
 
     try {
@@ -306,11 +306,31 @@ class PdfViewerComponent {
       v1Select.value = v1PageIndex !== null ? v1PageIndex.toString() : 'none';
     }
 
-    // Usamos escala 1.0 para mejorar el rendimiento del procesamiento de píxeles en más de un 100%
-    const viewport = (p2 || p1).getViewport({ scale: 1.0 });
-    
-    const w = viewport.width;
-    const h = viewport.height;
+    // Calcular viewports independientes y escalar p1 para encajar exactamente en las dimensiones de p2
+    let viewport1, viewport2;
+    let w, h;
+    const maxDim = 1200; // Cap a 1200px para garantizar un rendimiento ultrarrápido sin comprometer detalles visuales
+
+    if (p2) {
+      const rawV2 = p2.getViewport({ scale: 1.0 });
+      const scaleV2 = rawV2.width > maxDim ? maxDim / rawV2.width : 1.0;
+      viewport2 = p2.getViewport({ scale: scaleV2 });
+      w = Math.round(viewport2.width);
+      h = Math.round(viewport2.height);
+
+      if (p1) {
+        const rawV1 = p1.getViewport({ scale: 1.0 });
+        // Escalar p1 para que coincida exactamente con el ancho escalado de p2
+        const scaleX = w / rawV1.width;
+        viewport1 = p1.getViewport({ scale: scaleX });
+      }
+    } else if (p1) {
+      const rawV1 = p1.getViewport({ scale: 1.0 });
+      const scaleV1 = rawV1.width > maxDim ? maxDim / rawV1.width : 1.0;
+      viewport1 = p1.getViewport({ scale: scaleV1 });
+      w = Math.round(viewport1.width);
+      h = Math.round(viewport1.height);
+    }
 
     this.canvasV1.width = w;
     this.canvasV1.height = h;
@@ -322,7 +342,8 @@ class PdfViewerComponent {
 
     // Renderizar V1
     if (p1) {
-      await p1.render({ canvasContext: ctx1, viewport }).promise;
+      // Usar su viewport escalado personalizado para alinearlo perfectamente con el zoom de V2
+      await p1.render({ canvasContext: ctx1, viewport: viewport1 || viewport2 }).promise;
     } else {
       ctx1.fillStyle = '#ffffff';
       ctx1.fillRect(0, 0, w, h);
@@ -330,7 +351,7 @@ class PdfViewerComponent {
 
     // Renderizar V2
     if (p2) {
-      await p2.render({ canvasContext: ctx2, viewport }).promise;
+      await p2.render({ canvasContext: ctx2, viewport: viewport2 }).promise;
     } else {
       ctx2.fillStyle = '#ffffff';
       ctx2.fillRect(0, 0, w, h);
@@ -519,6 +540,9 @@ class PdfViewerComponent {
           </div>
           <div style="font-size: 12px; font-weight: 700; color: var(--text-main); line-height: 1.3;">${chg.name}</div>
           <p style="font-size: 10.5px; color: var(--text-muted); margin: 4px 0 8px 0; line-height: 1.4;">${chg.description}</p>
+          <div style="font-size: 9.5px; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 4px; font-weight: 600;">
+            <i class="fa-solid fa-file"></i> Página ${this.currentPage}
+          </div>
           
           <div style="border-top: 1px dashed var(--border-color); padding-top: 6px;">
             <div style="font-size: 10px; font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-link"></i> Partidas Vinculadas:</div>
@@ -612,7 +636,7 @@ class PdfViewerComponent {
 
   navigatePage(offset) {
     this.currentPage = Math.max(1, Math.min(this.numPages, this.currentPage + offset));
-    this.uiManager.showLoader(true);
+    this.uiManager.showLoader(true, "Comparando planos y alineando páginas...");
     setTimeout(async () => {
       try {
         if (this.pdfV1 && this.pdfV2) {
@@ -659,7 +683,7 @@ class PdfViewerComponent {
    * Carga planos de demostración interactivos simulados por Canvas
    */
   async loadDemoPlans() {
-    this.uiManager.showLoader(true);
+    this.uiManager.showLoader(true, "Cargando planos de demostración...");
     document.getElementById('bp-viewer-prompt').style.display = 'none';
     
     setTimeout(() => {
