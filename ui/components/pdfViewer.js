@@ -24,6 +24,9 @@ class PdfViewerComponent {
     this.zoomLevel = 1.0;
     this.v1OffsetX = 0;
     this.v1OffsetY = 0;
+    this.isDxfMode = false;
+    this.v1DxfElements = null;
+    this.v2DxfElements = null;
   }
 
   render(project, v1, v2, changes) {
@@ -43,7 +46,7 @@ class PdfViewerComponent {
       const inp1 = document.createElement('input');
       inp1.type = 'file';
       inp1.id = 'bp-input-file-v1';
-      inp1.accept = '.pdf';
+      inp1.accept = '.pdf,.dxf,.dwg';
       inp1.style.display = 'none';
       inp1.addEventListener('change', (e) => this.handleFileSelect(e.target.files[0], 1));
       document.body.appendChild(inp1);
@@ -55,7 +58,7 @@ class PdfViewerComponent {
       const inp2 = document.createElement('input');
       inp2.type = 'file';
       inp2.id = 'bp-input-file-v2';
-      inp2.accept = '.pdf';
+      inp2.accept = '.pdf,.dxf,.dwg';
       inp2.style.display = 'none';
       inp2.addEventListener('change', (e) => this.handleFileSelect(e.target.files[0], 2));
       document.body.appendChild(inp2);
@@ -257,6 +260,57 @@ class PdfViewerComponent {
       return;
     }
 
+    const isDxf1 = this.v1File.name.toLowerCase().endsWith('.dxf') || this.v1File.name.toLowerCase().endsWith('.dwg');
+    const isDxf2 = this.v2File.name.toLowerCase().endsWith('.dxf') || this.v2File.name.toLowerCase().endsWith('.dwg');
+
+    if (isDxf1 || isDxf2) {
+      if (this.v1File.name.toLowerCase().endsWith('.dwg') || this.v2File.name.toLowerCase().endsWith('.dwg')) {
+        alert("¡Archivo .dwg detectado! Para compararlo en el navegador, recuerda ejecutar primero el conversor 'convert_dwg_to_dxf.py' y cargar los archivos .dxf resultantes.");
+        return;
+      }
+      
+      this.uiManager.showLoader(true, "Procesando plano vectorial DXF...");
+      document.getElementById('bp-viewer-prompt').style.display = 'none';
+
+      try {
+        const dxfModule = this.uiManager.moduleRegistry.getModule('dxf');
+        this.v1DxfElements = await dxfModule.parse(this.v1File);
+        this.v2DxfElements = await dxfModule.parse(this.v2File);
+        this.isDxfMode = true;
+
+        const project = this.uiManager.revisionManager.getCurrentProject() || this.uiManager.revisionManager.createProject('proj_plans', 'Proyecto de Obra');
+        const ver1 = project.getVersion('v1_plans') || new Version('v1_plans', 'Planos V1', new Date().toISOString(), 'Sistema');
+        const ver2 = project.getVersion('v2_plans') || new Version('v2_plans', 'Planos V2', new Date().toISOString(), 'Sistema');
+        
+        this.v1DxfElements.forEach(el => ver1.addElement(el));
+        this.v2DxfElements.forEach(el => ver2.addElement(el));
+        
+        project.addVersion(ver1);
+        project.addVersion(ver2);
+
+        this.numPages = 1;
+        this.currentPage = 1;
+        this.zoomLevel = 1.0;
+        this.v1OffsetX = 0;
+        this.v1OffsetY = 0;
+        
+        const v1Select = document.getElementById('bp-compare-v1-select');
+        if (v1Select) {
+          v1Select.innerHTML = '<option value="1">Modelo DXF (Original)</option>';
+          v1Select.value = "1";
+        }
+
+        this.updateZoomRendering();
+        await this.compareAndRenderPage();
+      } catch (err) {
+        console.error(err);
+        alert("Error al comparar los planos DXF: " + err.message);
+      } finally {
+        this.uiManager.showLoader(false);
+      }
+      return;
+    }
+
     this.uiManager.showLoader(true, "Analizando y procesando planos con IA...");
     document.getElementById('bp-viewer-prompt').style.display = 'none';
 
@@ -371,6 +425,52 @@ class PdfViewerComponent {
 
   async compareAndRenderPage() {
     this.isComparing = true;
+    
+    if (this.isDxfMode) {
+      const w = 1200;
+      const h = 800;
+
+      this.canvasV1.width = w;
+      this.canvasV1.height = h;
+      this.canvasV2.width = w;
+      this.canvasV2.height = h;
+
+      const ctx1 = this.canvasV1.getContext('2d');
+      const ctx2 = this.canvasV2.getContext('2d');
+
+      // Calcular limites de vectores
+      const bbox2 = this.calculateDxfBoundingBox(this.v2DxfElements || []);
+      const bbox1 = this.calculateDxfBoundingBox(this.v1DxfElements || []);
+      const bbox = bbox2.width > 0 ? bbox2 : (bbox1.width > 0 ? bbox1 : { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 });
+
+      const scale = Math.min((w - 60) / bbox.width, (h - 60) / bbox.height);
+      const dx = -bbox.minX * scale + (w - bbox.width * scale) / 2;
+      const dy = -bbox.minY * scale + (h - bbox.height * scale) / 2;
+
+      // Renderizar V1 en canvasV1 (aplicando nudge)
+      this.renderDxfToCanvas(this.v1DxfElements || [], this.canvasV1, ctx1, scale, dx + (this.v1OffsetX || 0), dy + (this.v1OffsetY || 0));
+
+      // Renderizar V2 en canvasV2
+      this.renderDxfToCanvas(this.v2DxfElements || [], this.canvasV2, ctx2, scale, dx, dy);
+
+      // Comparación de píxeles vectoriales nítidos
+      const result = await PdfPlanModule.computeVisualDiff(this.canvasV1, this.canvasV2, w, h);
+
+      this.canvasDiff.width = w;
+      this.canvasDiff.height = h;
+      const ctxDiff = this.canvasDiff.getContext('2d');
+      ctxDiff.drawImage(result.canvasDiff, 0, 0);
+
+      // Textos
+      const t1 = (this.v1DxfElements || []).filter(el => el.elementType === 'plano_texto').map(el => el.data.text).join(' ');
+      const t2 = (this.v2DxfElements || []).filter(el => el.elementType === 'plano_texto').map(el => el.data.text).join(' ');
+
+      // Enriquecer
+      this.processAIPDFChanges(result.clouds, t1, t2, w, h);
+      this.updatePaginationUI();
+      this.updateVisorRendering();
+      return;
+    }
     
     // Obtener páginas correspondientes utilizando el mapeo inteligente
     const v1PageIndex = this.pageMapping ? this.pageMapping[this.currentPage] : this.currentPage;
@@ -886,6 +986,9 @@ class PdfViewerComponent {
     this.isComparing = false;
     this.detectedChanges = [];
     this.pageMapping = {};
+    this.isDxfMode = false;
+    this.v1DxfElements = null;
+    this.v2DxfElements = null;
     
     // Clear dropzone text stamps
     document.getElementById('bp-name-v1').textContent = 'Plano Origen V1';
@@ -986,5 +1089,79 @@ class PdfViewerComponent {
         v2Canvas.style.height = 'auto';
       }
     }
+  }
+
+  calculateDxfBoundingBox(elements) {
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+    let found = false;
+
+    elements.forEach(el => {
+      if (el.elementType === 'plano_grafico') {
+        const geom = el.data;
+        if (geom.type === 'line') {
+          minX = Math.min(minX, geom.start[0], geom.end[0]);
+          minY = Math.min(minY, geom.start[1], geom.end[1]);
+          maxX = Math.max(maxX, geom.start[0], geom.end[0]);
+          maxY = Math.max(maxY, geom.start[1], geom.end[1]);
+          found = true;
+        } else if (geom.type === 'polyline') {
+          geom.vertices.forEach(v => {
+            minX = Math.min(minX, v[0]);
+            minY = Math.min(minY, v[1]);
+            maxX = Math.max(maxX, v[0]);
+            maxY = Math.max(maxY, v[1]);
+            found = true;
+          });
+        }
+      }
+    });
+
+    if (!found) {
+      return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 };
+    }
+
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: maxX - minX,
+      height: maxY - minY
+    };
+  }
+
+  renderDxfToCanvas(elements, canvas, ctx, scale, dx, dy) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#0f172a'; // Gris oscuro para trazo CAD
+    ctx.lineWidth = 1;
+
+    ctx.save();
+    ctx.translate(dx, dy);
+    ctx.scale(scale, scale);
+
+    // Dibujar elementos gráficos
+    elements.forEach(el => {
+      if (el.elementType === 'plano_grafico') {
+        const geom = el.data;
+        if (geom.type === 'line') {
+          ctx.beginPath();
+          ctx.moveTo(geom.start[0], geom.start[1]);
+          ctx.lineTo(geom.end[0], geom.end[1]);
+          ctx.stroke();
+        } else if (geom.type === 'polyline' && geom.vertices.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(geom.vertices[0][0], geom.vertices[0][1]);
+          for (let i = 1; i < geom.vertices.length; i++) {
+            ctx.lineTo(geom.vertices[i][0], geom.vertices[i][1]);
+          }
+          ctx.stroke();
+        }
+      }
+    });
+
+    ctx.restore();
   }
 }
