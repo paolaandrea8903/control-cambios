@@ -1560,3 +1560,15 @@ body {
   height: 100%;
   width: 100%;
 }
+
+/* Blueprints interactive styles */
+.bp-dropzone:hover {
+  border-color: var(--primary) !important;
+  background: rgba(99, 102, 241, 0.05) !important;
+}
+
+.bp-change-item:hover {
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
