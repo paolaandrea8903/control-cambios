@@ -9,6 +9,15 @@ class AIEngine {
    * @returns {object} The enriched impact object and explanation string
    */
   static analyzeChange(change, context = {}) {
+    if (change.elementType === 'plano_texto' || change.elementType === 'plano_grafico') {
+      const explanation = change.aiExplanation || `[Análisis IA de Plano]: Se ha detectado una variación técnica en el plano de obra. ${change.elementName} - ${change.impact.technical}`;
+      return {
+        confidence: change.confidence || 0.90,
+        aiExplanation: explanation,
+        impact: change.impact
+      };
+    }
+
     const code = change.elementId;
     const name = change.elementName.toUpperCase();
     const chapterName = (context.chapterName || '').toUpperCase();
