@@ -12,15 +12,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- PDF.js CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-  <script>
-    if (typeof window !== 'undefined' && window.pdfjsLib) {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-    }
-  </script>
-  <!-- Tesseract.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <!-- Global Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -59,10 +50,6 @@
         <a href="#" class="menu-item" id="btn-menu-reports" data-view="reports">
           <i class="fa-solid fa-file-invoice-dollar"></i>
           <span>Informes de Revisión</span>
-        </a>
-        <a href="#" class="menu-item" id="btn-menu-blueprints" data-view="blueprints">
-          <i class="fa-solid fa-map"></i>
-          <span>Comparador de Planos</span>
         </a>
       </nav>
 
@@ -546,124 +533,6 @@
           </div>
         </section>
 
-      </div>
-    </main>
-
-    <!-- Side Slide-Over Panel for Change Details & AI Explanation -->
-    <div class="details-slideout" id="details-slideout">
-      <div class="slideout-header">
-        <div class="slideout-title-wrapper">
-          <span class="badge" id="details-change-type-badge">Modificado</span>
-          <h3 id="details-element-title">Partida 01.01</h3>
-        </div>
-        <button class="btn-close-slideout" id="btn-close-details"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <div class="slideout-content" id="details-slideout-content">
-        <!-- Elements side-by-side comparison properties -->
-        <div class="details-section">
-          <h4><i class="fa-solid fa-table-columns"></i> Comparación de Propiedades</h4>
-          
-          <div class="side-by-side-grid">
-            <div class="comparison-header">Propiedad</div>
-            <div class="comparison-header text-muted">Origen (V1)</div>
-            <div class="comparison-header text-primary">Destino (V2)</div>
-
-            <!-- Code -->
-            <div class="prop-name">Código</div>
-            <div class="prop-val-old" id="prop-old-code">-</div>
-            <div class="prop-val-new" id="prop-new-code">-</div>
-
-            <!-- Unit -->
-            <div class="prop-name">Unidad</div>
-            <div class="prop-val-old" id="prop-old-unit">-</div>
-            <div class="prop-val-new" id="prop-new-unit">-</div>
-
-            <!-- Quantity -->
-            <div class="prop-name">Cantidad</div>
-            <div class="prop-val-old" id="prop-old-qty">-</div>
-            <div class="prop-val-new" id="prop-new-qty">-</div>
-
-            <!-- Price -->
-            <div class="prop-name">Precio Unitario</div>
-            <div class="prop-val-old" id="prop-old-price">-</div>
-            <div class="prop-val-new" id="prop-new-price">-</div>
-
-            <!-- Total -->
-            <div class="prop-name">Importe Total</div>
-            <div class="prop-val-old" id="prop-old-total">-</div>
-            <div class="prop-val-new" id="prop-new-total">-</div>
-          </div>
-
-          <div class="net-variance-strip" id="details-net-variance-strip">
-            <span>Variación Neta:</span>
-            <span class="variance-val" id="details-net-variance-val">0.00 €</span>
-          </div>
-        </div>
-
-        <!-- Description comparison if changed -->
-        <div class="details-section hidden" id="desc-diff-section">
-          <h4><i class="fa-solid fa-quote-left"></i> Cambio de Descripción</h4>
-          <div class="desc-diff-box">
-            <div class="desc-old text-danger" id="desc-old-text">Anterior: -</div>
-            <div class="desc-new text-success" id="desc-new-text">Nuevo: -</div>
-          </div>
-        </div>
-
-        <!-- AI Deep Analysis Section -->
-        <div class="details-section card-ai-details">
-          <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Análisis Predictivo de la IA</h4>
-          
-          <div class="ai-speech-bubble" id="details-ai-explanation">
-            Analizando los motivos del cambio en esta partida...
-          </div>
-        </div>
-
-        <!-- Multi-Dimensional Impacts -->
-        <div class="details-section">
-          <h4><i class="fa-solid fa-gears"></i> Evaluación de Impacto Multidimensional</h4>
-          
-          <div class="impact-metrics-list">
-            
-            <!-- Technical Impact -->
-            <div class="impact-metric-item">
-              <div class="metric-header">
-                <span class="metric-title"><i class="fa-solid fa-wrench"></i> Técnico</span>
-                <span class="metric-status" id="impact-tech-badge">Estudio</span>
-              </div>
-              <p class="metric-desc" id="impact-tech-desc">Evaluación del cambio constructivo...</p>
-            </div>
-
-            <!-- Schedule Impact -->
-            <div class="impact-metric-item">
-              <div class="metric-header">
-                <span class="metric-title"><i class="fa-solid fa-calendar-days"></i> Plazo / Planificación</span>
-                <span class="metric-status" id="impact-schedule-badge">Neutro</span>
-              </div>
-              <p class="metric-desc" id="impact-schedule-desc">Evaluación del tiempo...</p>
-            </div>
-
-            <!-- Contractual Impact -->
-            <div class="impact-metric-item">
-              <div class="metric-header">
-                <span class="metric-title"><i class="fa-solid fa-file-signature"></i> Contractual / Legal</span>
-                <span class="metric-status" id="impact-contractual-badge">Revisión</span>
-              </div>
-              <p class="metric-desc" id="impact-contractual-desc">Afectación de garantías o cláusulas...</p>
-            </div>
-
-            <!-- Purchasing Impact -->
-            <div class="impact-metric-item">
-              <div class="metric-header">
-                <span class="metric-title"><i class="fa-solid fa-cart-shopping"></i> Compras / Proveedores</span>
-                <span class="metric-status" id="impact-purchases-badge">Estudio</span>
-              </div>
-              <p class="metric-desc" id="impact-purchases-desc">Ajuste de pedidos o subcontratas...</p>
-            </div>
-
-          </div>
-        </section>
-
         <!-- 6. BLUEPRINTS COMPARISON VIEW -->
         <section id="view-blueprints" class="app-view">
           <div class="blueprints-container" style="display: flex; gap: 20px; height: calc(100vh - 120px); min-height: 500px; padding: 10px 0;">
@@ -787,6 +656,124 @@
 
           </div>
         </section>
+
+      </div>
+    </main>
+
+    <!-- Side Slide-Over Panel for Change Details & AI Explanation -->
+    <div class="details-slideout" id="details-slideout">
+      <div class="slideout-header">
+        <div class="slideout-title-wrapper">
+          <span class="badge" id="details-change-type-badge">Modificado</span>
+          <h3 id="details-element-title">Partida 01.01</h3>
+        </div>
+        <button class="btn-close-slideout" id="btn-close-details"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="slideout-content" id="details-slideout-content">
+        <!-- Elements side-by-side comparison properties -->
+        <div class="details-section">
+          <h4><i class="fa-solid fa-table-columns"></i> Comparación de Propiedades</h4>
+          
+          <div class="side-by-side-grid">
+            <div class="comparison-header">Propiedad</div>
+            <div class="comparison-header text-muted">Origen (V1)</div>
+            <div class="comparison-header text-primary">Destino (V2)</div>
+
+            <!-- Code -->
+            <div class="prop-name">Código</div>
+            <div class="prop-val-old" id="prop-old-code">-</div>
+            <div class="prop-val-new" id="prop-new-code">-</div>
+
+            <!-- Unit -->
+            <div class="prop-name">Unidad</div>
+            <div class="prop-val-old" id="prop-old-unit">-</div>
+            <div class="prop-val-new" id="prop-new-unit">-</div>
+
+            <!-- Quantity -->
+            <div class="prop-name">Cantidad</div>
+            <div class="prop-val-old" id="prop-old-qty">-</div>
+            <div class="prop-val-new" id="prop-new-qty">-</div>
+
+            <!-- Price -->
+            <div class="prop-name">Precio Unitario</div>
+            <div class="prop-val-old" id="prop-old-price">-</div>
+            <div class="prop-val-new" id="prop-new-price">-</div>
+
+            <!-- Total -->
+            <div class="prop-name">Importe Total</div>
+            <div class="prop-val-old" id="prop-old-total">-</div>
+            <div class="prop-val-new" id="prop-new-total">-</div>
+          </div>
+
+          <div class="net-variance-strip" id="details-net-variance-strip">
+            <span>Variación Neta:</span>
+            <span class="variance-val" id="details-net-variance-val">0.00 €</span>
+          </div>
+        </div>
+
+        <!-- Description comparison if changed -->
+        <div class="details-section hidden" id="desc-diff-section">
+          <h4><i class="fa-solid fa-quote-left"></i> Cambio de Descripción</h4>
+          <div class="desc-diff-box">
+            <div class="desc-old text-danger" id="desc-old-text">Anterior: -</div>
+            <div class="desc-new text-success" id="desc-new-text">Nuevo: -</div>
+          </div>
+        </div>
+
+        <!-- AI Deep Analysis Section -->
+        <div class="details-section card-ai-details">
+          <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Análisis Predictivo de la IA</h4>
+          
+          <div class="ai-speech-bubble" id="details-ai-explanation">
+            Analizando los motivos del cambio en esta partida...
+          </div>
+        </div>
+
+        <!-- Multi-Dimensional Impacts -->
+        <div class="details-section">
+          <h4><i class="fa-solid fa-gears"></i> Evaluación de Impacto Multidimensional</h4>
+          
+          <div class="impact-metrics-list">
+            
+            <!-- Technical Impact -->
+            <div class="impact-metric-item">
+              <div class="metric-header">
+                <span class="metric-title"><i class="fa-solid fa-wrench"></i> Técnico</span>
+                <span class="metric-status" id="impact-tech-badge">Estudio</span>
+              </div>
+              <p class="metric-desc" id="impact-tech-desc">Evaluación del cambio constructivo...</p>
+            </div>
+
+            <!-- Schedule Impact -->
+            <div class="impact-metric-item">
+              <div class="metric-header">
+                <span class="metric-title"><i class="fa-solid fa-calendar-days"></i> Plazo / Planificación</span>
+                <span class="metric-status" id="impact-schedule-badge">Neutro</span>
+              </div>
+              <p class="metric-desc" id="impact-schedule-desc">Evaluación del tiempo...</p>
+            </div>
+
+            <!-- Contractual Impact -->
+            <div class="impact-metric-item">
+              <div class="metric-header">
+                <span class="metric-title"><i class="fa-solid fa-file-signature"></i> Contractual / Legal</span>
+                <span class="metric-status" id="impact-contractual-badge">Revisión</span>
+              </div>
+              <p class="metric-desc" id="impact-contractual-desc">Afectación de garantías o cláusulas...</p>
+            </div>
+
+            <!-- Purchasing Impact -->
+            <div class="impact-metric-item">
+              <div class="metric-header">
+                <span class="metric-title"><i class="fa-solid fa-cart-shopping"></i> Compras / Proveedores</span>
+                <span class="metric-status" id="impact-purchases-badge">Estudio</span>
+              </div>
+              <p class="metric-desc" id="impact-purchases-desc">Ajuste de pedidos o subcontratas...</p>
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
 
@@ -799,7 +786,6 @@
   <!-- Modules -->
   <script src="modules/moduleRegistry.js"></script>
   <script src="modules/prestoModule.js"></script>
-  <script src="modules/pdfPlanModule.js"></script>
   
   <!-- Services -->
   <script src="services/aiEngine.js"></script>
@@ -815,7 +801,6 @@
   <script src="ui/components/detailsPanel.js"></script>
   <script src="ui/components/versionHistory.js"></script>
   <script src="ui/components/reportsView.js"></script>
-  <script src="ui/components/pdfViewer.js"></script>
   
   <!-- UI Coordinator and App Bootstrapper -->
   <script src="ui/uiManager.js"></script>
