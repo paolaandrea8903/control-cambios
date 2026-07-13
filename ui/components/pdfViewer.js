@@ -185,7 +185,10 @@ class PdfViewerComponent {
       this.pdfV1 = await window.pdfjsLib.getDocument({ data: arrayBuffer1 }).promise;
       this.pdfV2 = await window.pdfjsLib.getDocument({ data: arrayBuffer2 }).promise;
       
-      this.numPages = Math.max(this.pdfV1.numPages, this.pdfV2.numPages);
+      // Mapeo inteligente de páginas en base al cajetín/textos
+      await this.mapPdfPages();
+
+      this.numPages = this.pdfV2.numPages; // V2 es la versión revisada de referencia
       this.currentPage = 1;
 
       await this.compareAndRenderPage();
@@ -197,11 +200,70 @@ class PdfViewerComponent {
     }
   }
 
+  async mapPdfPages() {
+    this.pageMapping = {}; // V2 page -> V1 page
+    const v1Stamps = [];
+    
+    // Extraer texto inicial (cajetín) de todas las páginas de V1
+    for (let i = 1; i <= this.pdfV1.numPages; i++) {
+      const page = await this.pdfV1.getPage(i);
+      const content = await page.getTextContent();
+      const text = content.items.map(item => item.str).join(' ');
+      v1Stamps.push({ index: i, text: text.substring(0, 800) });
+    }
+
+    // Mapear cada página de V2 a la mejor coincidencia en V1
+    for (let j = 1; j <= this.pdfV2.numPages; j++) {
+      const page = await this.pdfV2.getPage(j);
+      const content = await page.getTextContent();
+      const text = content.items.map(item => item.str).join(' ');
+      const v2Text = text.substring(0, 800);
+
+      let bestMatchV1 = null;
+      let bestScore = 0;
+
+      // Intentar extraer códigos de plano como (A-01, E-04, etc.)
+      const sheetNumberRegex = /\b[A-Z]{1,3}-\d{2,4}\b/g;
+      const v2Codes = v2Text.match(sheetNumberRegex) || [];
+
+      for (const v1Page of v1Stamps) {
+        let score = 0;
+
+        // 1. Coincidencia por código de plano
+        const v1Codes = v1Page.text.match(sheetNumberRegex) || [];
+        const commonCodes = v2Codes.filter(c => v1Codes.includes(c));
+        if (commonCodes.length > 0) {
+          score += 15;
+        }
+
+        // 2. Coincidencia por palabras comunes de más de 4 letras
+        const tokens2 = v2Text.toLowerCase().split(/\s+/).filter(t => t.length > 4);
+        const tokens1 = v1Page.text.toLowerCase().split(/\s+/).filter(t => t.length > 4);
+        const intersection = tokens2.filter(t => tokens1.includes(t));
+        const overlap = intersection.length / Math.max(1, Math.min(tokens1.length, tokens2.length));
+        score += overlap * 5;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatchV1 = v1Page.index;
+        }
+      }
+
+      // Si la similitud es aceptable, mapeamos. Si no, emparejamos por el mismo número de página si existe.
+      if (bestScore > 0.4) {
+        this.pageMapping[j] = bestMatchV1;
+      } else {
+        this.pageMapping[j] = j <= this.pdfV1.numPages ? j : null;
+      }
+    }
+  }
+
   async compareAndRenderPage() {
     this.isComparing = true;
     
-    // Obtener páginas correspondientes
-    const p1 = this.currentPage <= this.pdfV1.numPages ? await this.pdfV1.getPage(this.currentPage) : null;
+    // Obtener páginas correspondientes utilizando el mapeo inteligente
+    const v1PageIndex = this.pageMapping ? this.pageMapping[this.currentPage] : this.currentPage;
+    const p1 = (v1PageIndex && v1PageIndex <= this.pdfV1.numPages) ? await this.pdfV1.getPage(v1PageIndex) : null;
     const p2 = this.currentPage <= this.pdfV2.numPages ? await this.pdfV2.getPage(this.currentPage) : null;
 
     const viewport = (p2 || p1).getViewport({ scale: 1.5 });
