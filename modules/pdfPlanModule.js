@@ -162,10 +162,10 @@ class PdfPlanModule {
         const isBg2 = (r2 > 240 && g2 > 240 && b2 > 240) || a2 === 0;
 
         if (isBg1 && isBg2) {
-          // Fondo oscuro para encajar con el tema visual de la plataforma
-          df[idx] = 11;
-          df[idx+1] = 15;
-          df[idx+2] = 25;
+          // Fondo blanco para alta visibilidad y apariencia de papel
+          df[idx] = 255;
+          df[idx+1] = 255;
+          df[idx+2] = 255;
           df[idx+3] = 255;
         } else if (!isBg1 && isBg2) {
           // Eliminado (Rojo)
@@ -195,11 +195,10 @@ class PdfPlanModule {
             diffPixelsCount++;
             grid[Math.floor(y / gridSize)][Math.floor(x / gridSize)]++;
           } else {
-            // Elemento común sin cambios (Gris azulado atenuado)
-            const gray = Math.round((r2 + g2 + b2) / 3);
-            df[idx] = Math.round(gray * 0.25) + 30;
-            df[idx+1] = Math.round(gray * 0.25) + 40;
-            df[idx+2] = Math.round(gray * 0.25) + 55;
+            // Elemento común sin cambios (Gris pizarra de alta visibilidad)
+            df[idx] = 148;
+            df[idx+1] = 163;
+            df[idx+2] = 184;
             df[idx+3] = 255;
           }
         }

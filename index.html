@@ -612,11 +612,17 @@
               
               <!-- Visor Toolbar Controls -->
               <div class="bp-viewer-toolbar" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                   <span style="font-size: 12px; font-weight: bold; color: var(--text-main);" id="bp-page-indicator">Pág: --/--</span>
-                  <div style="display: flex; gap: 5px;">
+                  <div style="display: flex; gap: 5px; align-items: center;">
                     <button class="btn btn-sm btn-outline" id="btn-bp-prev-page" disabled style="padding: 2px 8px; font-size: 11px;"><i class="fa-solid fa-chevron-left"></i></button>
                     <button class="btn btn-sm btn-outline" id="btn-bp-next-page" disabled style="padding: 2px 8px; font-size: 11px;"><i class="fa-solid fa-chevron-right"></i></button>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-left: 10px;">
+                    <span style="font-size: 11px; color: var(--text-muted);">Comparar con V1:</span>
+                    <select id="bp-compare-v1-select" style="background: var(--body-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 11px; padding: 3px 6px; border-radius: 4px; font-family: inherit; width: 130px;">
+                      <option value="none">-- Ninguno --</option>
+                    </select>
                   </div>
                 </div>
                 

@@ -99,6 +99,30 @@ class PdfViewerComponent {
     if (btnPrev) btnPrev.onclick = () => this.navigatePage(-1);
     if (btnNext) btnNext.onclick = () => this.navigatePage(1);
 
+    // Dropdown selector mapping V1 page manually
+    const v1Select = document.getElementById('bp-compare-v1-select');
+    if (v1Select) {
+      v1Select.onchange = (e) => {
+        const val = e.target.value;
+        if (val === 'none') {
+          this.pageMapping[this.currentPage] = null;
+        } else {
+          this.pageMapping[this.currentPage] = parseInt(val, 10);
+        }
+        
+        this.uiManager.showLoader(true);
+        setTimeout(async () => {
+          try {
+            await this.compareAndRenderPage();
+          } catch (err) {
+            console.error(err);
+          } finally {
+            this.uiManager.showLoader(false);
+          }
+        }, 50);
+      };
+    }
+
     // Display mode buttons
     const btnOverlay = document.getElementById('btn-bp-mode-overlay');
     const btnCurtain = document.getElementById('btn-bp-mode-curtain');
@@ -189,6 +213,15 @@ class PdfViewerComponent {
       // Mapeo inteligente de páginas en base al cajetín/textos
       await this.mapPdfPages();
 
+      // Rellenar las opciones del selector de páginas de V1
+      const v1Select = document.getElementById('bp-compare-v1-select');
+      if (v1Select) {
+        v1Select.innerHTML = '<option value="none">-- Ninguno --</option>';
+        for (let i = 1; i <= this.pdfV1.numPages; i++) {
+          v1Select.innerHTML += `<option value="${i}">Pág ${i} (Original)</option>`;
+        }
+      }
+
       this.numPages = this.pdfV2.numPages; // V2 es la versión revisada de referencia
       this.currentPage = 1;
 
@@ -267,7 +300,14 @@ class PdfViewerComponent {
     const p1 = (v1PageIndex && v1PageIndex <= this.pdfV1.numPages) ? await this.pdfV1.getPage(v1PageIndex) : null;
     const p2 = this.currentPage <= this.pdfV2.numPages ? await this.pdfV2.getPage(this.currentPage) : null;
 
-    const viewport = (p2 || p1).getViewport({ scale: 1.5 });
+    // Sincronizar el selector manual de coincidencia
+    const v1Select = document.getElementById('bp-compare-v1-select');
+    if (v1Select) {
+      v1Select.value = v1PageIndex !== null ? v1PageIndex.toString() : 'none';
+    }
+
+    // Usamos escala 1.0 para mejorar el rendimiento del procesamiento de píxeles en más de un 100%
+    const viewport = (p2 || p1).getViewport({ scale: 1.0 });
     
     const w = viewport.width;
     const h = viewport.height;
@@ -572,11 +612,20 @@ class PdfViewerComponent {
 
   navigatePage(offset) {
     this.currentPage = Math.max(1, Math.min(this.numPages, this.currentPage + offset));
-    if (this.pdfV1 && this.pdfV2) {
-      this.compareAndRenderPage();
-    } else {
-      this.renderDemoPage();
-    }
+    this.uiManager.showLoader(true);
+    setTimeout(async () => {
+      try {
+        if (this.pdfV1 && this.pdfV2) {
+          await this.compareAndRenderPage();
+        } else {
+          this.renderDemoPage();
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        this.uiManager.showLoader(false);
+      }
+    }, 50);
   }
 
   updateVisorRendering() {
