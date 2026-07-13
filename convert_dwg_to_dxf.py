@@ -58,6 +58,13 @@ def convert_dwgs_to_dxfs(input_dir, output_dir=None):
         for f in dwg_files:
             shutil.copy(f, temp_in)
             
+        # Copiar carpetas de referencias externas (XREF) para que ODA las resuelva automáticamente
+        for item in os.listdir(input_dir):
+            item_path = os.path.join(input_dir, item)
+            if os.path.isdir(item_path) and item.lower() in ["xref", "xrefs", "referencias"]:
+                shutil.copytree(item_path, os.path.join(temp_in, item))
+                print(f"  [XREF] Carpeta de referencias '{item}' copiada para resolucion automatica.")
+            
         print("Iniciando conversión por lotes en segundo plano...")
         
         # Ejecutar conversión
