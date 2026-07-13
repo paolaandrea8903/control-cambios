@@ -26,20 +26,20 @@ def convert_dwgs_to_dxfs(input_dir, output_dir=None):
 
     oda_path = find_oda_converter()
     if not oda_path:
-        print("\n[❌ ERROR] No se encontró ODA File Converter en tu sistema.")
-        print("Para realizar conversiones de DWG a DXF automáticamente:")
+        print("\n[ERROR] No se encontro ODA File Converter en tu sistema.")
+        print("Para realizar conversiones de DWG a DXF automaticamente:")
         print("1. Descarga el instalador gratuito de ODA File Converter desde:")
         print("   https://www.opendesign.com/guestfiles/oda_file_converter")
-        print("2. Instálalo con las opciones predeterminadas e inicia este script de nuevo.\n")
+        print("2. Instalo con las opciones predeterminadas e inicia este script de nuevo.\n")
         return False
 
     # Contar archivos DWG
     dwg_files = glob.glob(os.path.join(input_dir, "*.dwg"))
     if not dwg_files:
-        print(f"\n[⚠️ ALERTA] No se encontraron archivos .dwg en la carpeta: {input_dir}\n")
+        print(f"\n[ALERTA] No se encontraron archivos .dwg en la carpeta: {input_dir}\n")
         return False
 
-    print(f"\n[🔄 PROCESANDO] Encontrados {len(dwg_files)} archivos .dwg para convertir...")
+    print(f"\n[PROCESANDO] Encontrados {len(dwg_files)} archivos .dwg para convertir...")
     print(f"Uso de ODA File Converter detectado en: {oda_path}")
 
     # ODA File Converter Command Line Syntax:
@@ -74,13 +74,13 @@ def convert_dwgs_to_dxfs(input_dir, output_dir=None):
             if os.path.exists(dest_file):
                 os.remove(dest_file)
             shutil.move(dxf, output_dir)
-            print(f"  ✅ Convertido con éxito: {os.path.basename(dxf)}")
+            print(f"  [OK] Convertido con exito: {os.path.basename(dxf)}")
             
-        print(f"\n[🎉 COMPLETADO] Conversión finalizada. Archivos .dxf guardados en: {output_dir}\n")
+        print(f"\n[COMPLETADO] Conversion finalizada. Archivos .dxf guardados en: {output_dir}\n")
         return True
         
     except Exception as e:
-        print(f"\n[❌ ERROR] Ocurrió un fallo durante la conversión: {e}\n")
+        print(f"\n[ERROR] Ocurrio un fallo durante la conversion: {e}\n")
         return False
         
     finally:
