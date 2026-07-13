@@ -22,6 +22,8 @@ class PdfViewerComponent {
     this.v1File = null;
     this.v2File = null;
     this.zoomLevel = 1.0;
+    this.v1OffsetX = 0;
+    this.v1OffsetY = 0;
   }
 
   render(project, v1, v2, changes) {
@@ -189,6 +191,52 @@ class PdfViewerComponent {
         this.updateZoomRendering();
       };
     }
+
+    // Botones de calibración de alineación (Nudge)
+    const btnNudgeLeft = document.getElementById('btn-bp-nudge-left');
+    const btnNudgeRight = document.getElementById('btn-bp-nudge-right');
+    const btnNudgeUp = document.getElementById('btn-bp-nudge-up');
+    const btnNudgeDown = document.getElementById('btn-bp-nudge-down');
+    const btnNudgeReset = document.getElementById('btn-bp-nudge-reset');
+
+    const handleNudge = (dx, dy) => {
+      this.v1OffsetX += dx;
+      this.v1OffsetY += dy;
+      
+      this.uiManager.showLoader(true, "Calibrando alineación de plano...");
+      setTimeout(async () => {
+        try {
+          await this.compareAndRenderPage();
+        } catch (err) {
+          console.error(err);
+        } finally {
+          this.uiManager.showLoader(false);
+        }
+      }, 50);
+    };
+
+    if (btnNudgeLeft) btnNudgeLeft.onclick = () => handleNudge(-1, 0);
+    if (btnNudgeRight) btnNudgeRight.onclick = () => handleNudge(1, 0);
+    if (btnNudgeUp) btnNudgeUp.onclick = () => handleNudge(0, -1);
+    if (btnNudgeDown) btnNudgeDown.onclick = () => handleNudge(0, 1);
+    
+    if (btnNudgeReset) {
+      btnNudgeReset.onclick = () => {
+        this.v1OffsetX = 0;
+        this.v1OffsetY = 0;
+        
+        this.uiManager.showLoader(true, "Restableciendo calibración...");
+        setTimeout(async () => {
+          try {
+            await this.compareAndRenderPage();
+          } catch (err) {
+            console.error(err);
+          } finally {
+            this.uiManager.showLoader(false);
+          }
+        }, 50);
+      };
+    }
   }
 
   handleFileSelect(file, versionNum) {
@@ -250,6 +298,8 @@ class PdfViewerComponent {
       this.numPages = this.pdfV2.numPages; // V2 es la versión revisada de referencia
       this.currentPage = 1;
       this.zoomLevel = 1.0;
+      this.v1OffsetX = 0;
+      this.v1OffsetY = 0;
       this.updateZoomRendering();
 
       await this.compareAndRenderPage();
@@ -369,8 +419,13 @@ class PdfViewerComponent {
 
     // Renderizar V1
     if (p1) {
-      // Usar su viewport escalado personalizado para alinearlo perfectamente con el zoom de V2
+      // Usar su viewport escalado personalizado y aplicar translación manual para alinear (Calibración)
+      ctx1.fillStyle = '#ffffff';
+      ctx1.fillRect(0, 0, w, h);
+      ctx1.save();
+      ctx1.translate(this.v1OffsetX || 0, this.v1OffsetY || 0);
       await p1.render({ canvasContext: ctx1, viewport: viewport1 || viewport2 }).promise;
+      ctx1.restore();
     } else {
       ctx1.fillStyle = '#ffffff';
       ctx1.fillRect(0, 0, w, h);
