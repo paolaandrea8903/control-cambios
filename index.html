@@ -12,6 +12,15 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script>
+    if (typeof window !== 'undefined' && window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    }
+  </script>
+  <!-- Tesseract.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <!-- Global Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -50,6 +59,10 @@
         <a href="#" class="menu-item" id="btn-menu-reports" data-view="reports">
           <i class="fa-solid fa-file-invoice-dollar"></i>
           <span>Informes de Revisión</span>
+        </a>
+        <a href="#" class="menu-item" id="btn-menu-blueprints" data-view="blueprints">
+          <i class="fa-solid fa-map"></i>
+          <span>Comparador de Planos</span>
         </a>
       </nav>
 
@@ -786,6 +799,7 @@
   <!-- Modules -->
   <script src="modules/moduleRegistry.js"></script>
   <script src="modules/prestoModule.js"></script>
+  <script src="modules/pdfPlanModule.js"></script>
   
   <!-- Services -->
   <script src="services/aiEngine.js"></script>
@@ -801,6 +815,7 @@
   <script src="ui/components/detailsPanel.js"></script>
   <script src="ui/components/versionHistory.js"></script>
   <script src="ui/components/reportsView.js"></script>
+  <script src="ui/components/pdfViewer.js"></script>
   
   <!-- UI Coordinator and App Bootstrapper -->
   <script src="ui/uiManager.js"></script>
