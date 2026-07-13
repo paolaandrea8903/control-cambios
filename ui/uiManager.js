@@ -16,7 +16,8 @@ class UIManager {
       changelog: new ChangeLogComponent(this),
       detailsPanel: new DetailsPanelComponent(this),
       history: new VersionHistoryComponent(this),
-      reports: new ReportsViewComponent(this)
+      reports: new ReportsViewComponent(this),
+      blueprints: new PdfViewerComponent(this)
     };
 
     this.setupViewNavigation();
@@ -82,6 +83,10 @@ class UIManager {
         title.textContent = 'Informes de Revisión';
         subtitle.textContent = 'Generación de informes ejecutivos y exportación de datos';
         break;
+      case 'blueprints':
+        title.textContent = 'Comparador de Planos PDF';
+        subtitle.textContent = 'Análisis técnico y comparación visual de planos de obra';
+        break;
     }
 
     // Refresh active view rendering
@@ -93,10 +98,10 @@ class UIManager {
     if (!project) return;
 
     const versions = project.getSortedVersions();
-    if (versions.length === 0) return;
+    if (versions.length === 0 && this.activeView !== 'blueprints' && this.activeView !== 'history') return;
 
-    const v1 = versions[0];
-    const v2 = versions[versions.length - 1]; // latest version
+    const v1 = versions[0] || null;
+    const v2 = versions[versions.length - 1] || null;
     const changes = project.changes;
 
     // Render active component
@@ -115,6 +120,9 @@ class UIManager {
         break;
       case 'reports':
         this.components.reports.render(project, v1, v2, changes);
+        break;
+      case 'blueprints':
+        this.components.blueprints.render(project, v1, v2, changes);
         break;
     }
   }

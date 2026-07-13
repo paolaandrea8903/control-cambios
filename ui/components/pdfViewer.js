@@ -155,7 +155,7 @@ class PdfViewerComponent {
 
   async runBlueprintComparison() {
     if (!this.v1File || !this.v2File) {
-      alert("Por favor, selecciona o arrastra ambos planos PDF (V1 y V2).");
+      alert("No ha cargado los planos para comparar. Por favor, arrastre o seleccione el Plano V1 y el Plano V2 antes de iniciar.");
       return;
     }
 
