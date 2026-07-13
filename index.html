@@ -636,6 +636,14 @@
                   </button>
                 </div>
 
+                <!-- Zoom Controls -->
+                <div style="display: flex; align-items: center; gap: 4px; background: var(--body-bg); padding: 3px; border-radius: 6px; border: 1px solid var(--border-color);">
+                  <button class="btn btn-sm" id="btn-bp-zoom-out" title="Alejar" style="font-size: 11px; padding: 4px 8px; border: none; cursor: pointer; background: transparent; color: var(--text-main);"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                  <span style="font-size: 10.5px; font-weight: bold; width: 35px; text-align: center; color: var(--text-main); display: inline-block;" id="bp-zoom-val">100%</span>
+                  <button class="btn btn-sm" id="btn-bp-zoom-in" title="Acercar" style="font-size: 11px; padding: 4px 8px; border: none; cursor: pointer; background: transparent; color: var(--text-main);"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                  <button class="btn btn-sm btn-outline" id="btn-bp-zoom-reset" style="font-size: 9px; padding: 2px 5px; border-color: var(--border-color); color: var(--text-muted); cursor: pointer; border-radius: 3px;">Reset</button>
+                </div>
+
                 <!-- Curtain Slider / Opacity Controls -->
                 <div id="bp-opacity-controls" style="display: flex; align-items: center; gap: 10px;">
                   <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-sliders"></i> Opacidad:</span>
@@ -668,6 +676,27 @@
                 <div id="bp-viewer-prompt" style="position: absolute; text-align: center; color: var(--text-muted); pointer-events: none;">
                   <i class="fa-solid fa-map" style="font-size: 40px; margin-bottom: 10px; display: block; color: var(--primary); opacity: 0.8;"></i>
                   <span style="font-size: 13px; font-weight: 500;">Carga dos planos PDF o pulsa "Cargar Planos de Demostración"</span>
+                </div>
+
+                <!-- Floating Legend Box -->
+                <div class="bp-legend-card" style="position: absolute; bottom: 15px; right: 15px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); pointer-events: auto;">
+                  <h5 style="margin: 0 0 4px 0; font-size: 10.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary);">Leyenda de Cambios</h5>
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #fff;">
+                    <span style="width: 12px; height: 12px; border-radius: 2px; background: #10B981; border: 1px solid rgba(255,255,255,0.2);"></span>
+                    <span>Añadido (Nuevo en V2)</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #fff;">
+                    <span style="width: 12px; height: 12px; border-radius: 2px; background: #EF4444; border: 1px solid rgba(255,255,255,0.2);"></span>
+                    <span>Eliminado (Desaparecido en V1)</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #fff;">
+                    <span style="width: 12px; height: 12px; border-radius: 2px; background: #F59E0B; border: 1px solid rgba(255,255,255,0.2);"></span>
+                    <span>Modificado / Diferencia</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #fff;">
+                    <span style="width: 12px; height: 12px; border-radius: 2px; background: #94A3B8; border: 1px solid rgba(255,255,255,0.2);"></span>
+                    <span>Sin Cambios (Común)</span>
+                  </div>
                 </div>
               </div>
 

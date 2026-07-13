@@ -21,6 +21,7 @@ class PdfViewerComponent {
     // Bindings
     this.v1File = null;
     this.v2File = null;
+    this.zoomLevel = 1.0;
   }
 
   render(project, v1, v2, changes) {
@@ -164,6 +165,30 @@ class PdfViewerComponent {
         this.updateCanvasOpacity(val / 100);
       };
     }
+
+    // Botones de control de Zoom
+    const btnZoomIn = document.getElementById('btn-bp-zoom-in');
+    const btnZoomOut = document.getElementById('btn-bp-zoom-out');
+    const btnZoomReset = document.getElementById('btn-bp-zoom-reset');
+    
+    if (btnZoomIn) {
+      btnZoomIn.onclick = () => {
+        this.zoomLevel = Math.min(3.0, this.zoomLevel + 0.25);
+        this.updateZoomRendering();
+      };
+    }
+    if (btnZoomOut) {
+      btnZoomOut.onclick = () => {
+        this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.25);
+        this.updateZoomRendering();
+      };
+    }
+    if (btnZoomReset) {
+      btnZoomReset.onclick = () => {
+        this.zoomLevel = 1.0;
+        this.updateZoomRendering();
+      };
+    }
   }
 
   handleFileSelect(file, versionNum) {
@@ -224,6 +249,8 @@ class PdfViewerComponent {
 
       this.numPages = this.pdfV2.numPages; // V2 es la versión revisada de referencia
       this.currentPage = 1;
+      this.zoomLevel = 1.0;
+      this.updateZoomRendering();
 
       await this.compareAndRenderPage();
     } catch (err) {
@@ -667,12 +694,12 @@ class PdfViewerComponent {
       v2Canvas.style.display = 'block';
       diffCanvas.style.display = 'none';
       
-      // Simplificación para visualización lado a lado
-      v1Canvas.style.maxWidth = '49%';
-      v2Canvas.style.maxWidth = '49%';
       v1Canvas.style.display = 'inline-block';
       v2Canvas.style.display = 'inline-block';
     }
+
+    // Aplicar dimensiones de zoom
+    this.updateZoomRendering();
   }
 
   updateCanvasOpacity(opacity) {
@@ -837,7 +864,72 @@ class PdfViewerComponent {
     // Show visual help prompt
     document.getElementById('bp-viewer-prompt').style.display = 'block';
     
+    // Reset zoom level
+    this.zoomLevel = 1.0;
+    this.updateZoomRendering();
+
     // Update headers in UIManager
     this.uiManager.updateHeaderBadges();
+  }
+
+  updateZoomRendering() {
+    const v1Canvas = this.canvasV1;
+    const v2Canvas = this.canvasV2;
+    const diffCanvas = this.canvasDiff;
+    const wrapper = document.getElementById('bp-stage-wrapper');
+    const zoomValText = document.getElementById('bp-zoom-val');
+
+    if (zoomValText) {
+      zoomValText.textContent = `${Math.round(this.zoomLevel * 100)}%`;
+    }
+
+    if (!diffCanvas || !v1Canvas || !v2Canvas || !wrapper) return;
+
+    const baseW = diffCanvas.width;
+    if (!baseW) return;
+
+    // Si estamos haciendo zoom in, cambiamos el alineamiento de bp-stage-wrapper para permitir desplazamiento
+    if (this.zoomLevel > 1.0) {
+      wrapper.style.alignItems = 'flex-start';
+      wrapper.style.justifyContent = 'flex-start';
+      wrapper.style.padding = '20px';
+    } else {
+      wrapper.style.alignItems = 'center';
+      wrapper.style.justifyContent = 'center';
+      wrapper.style.padding = '0';
+    }
+
+    if (this.zoomLevel === 1.0) {
+      // Restaurar estilos responsivos predeterminados
+      if (this.displayMode === 'overlay') {
+        diffCanvas.style.width = '100%';
+        diffCanvas.style.maxWidth = '100%';
+        diffCanvas.style.height = 'auto';
+      } else {
+        v1Canvas.style.width = '49%';
+        v1Canvas.style.maxWidth = '49%';
+        v1Canvas.style.height = 'auto';
+        
+        v2Canvas.style.width = '49%';
+        v2Canvas.style.maxWidth = '49%';
+        v2Canvas.style.height = 'auto';
+      }
+    } else {
+      // Aplicar dimensiones explícitas según el nivel de zoom
+      const zoomedWidth = baseW * this.zoomLevel;
+      if (this.displayMode === 'overlay') {
+        diffCanvas.style.width = `${zoomedWidth}px`;
+        diffCanvas.style.maxWidth = 'none';
+        diffCanvas.style.height = 'auto';
+      } else {
+        v1Canvas.style.width = `${zoomedWidth}px`;
+        v1Canvas.style.maxWidth = 'none';
+        v1Canvas.style.height = 'auto';
+        
+        v2Canvas.style.width = `${zoomedWidth}px`;
+        v2Canvas.style.maxWidth = 'none';
+        v2Canvas.style.height = 'auto';
+      }
+    }
   }
 }
