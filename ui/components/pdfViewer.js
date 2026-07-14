@@ -532,6 +532,13 @@ class PdfViewerComponent {
       const dx = -bbox.minX * scale + (w - bbox.width * scale) / 2;
       const dy = -bbox.minY * scale + (h - bbox.height * scale) / 2;
 
+      this.debugDxfScale = scale;
+      this.debugDxfDx = dx;
+      this.debugDxfDy = dy;
+      this.debugDxfBbox = bbox;
+      this.debugDxfW = w;
+      this.debugDxfH = h;
+
       // Renderizar V1 en canvasV1 (aplicando nudge)
       this.renderDxfToCanvas(this.v1DxfElements || [], this.canvasV1, ctx1, scale, dx + (this.v1OffsetX || 0), dy + (this.v1OffsetY || 0));
 
@@ -1156,13 +1163,19 @@ class PdfViewerComponent {
     const contDisp = container ? container.style.display : 'N/A';
     const wrapDisp = wrapper ? wrapper.style.display : 'N/A';
 
+    const dxfScaleText = this.isDxfMode && this.debugDxfScale ? 
+      '<br>dx/dy: ' + Math.round(this.debugDxfDx) + '/' + Math.round(this.debugDxfDy) + 
+      '<br>scale: ' + this.debugDxfScale.toFixed(6) + 
+      '<br>bbox: w=' + Math.round(this.debugDxfBbox.width) + ' h=' + Math.round(this.debugDxfBbox.height) + 
+      '<br>renderW/H: ' + this.debugDxfW + 'x' + this.debugDxfH : '';
+
     debugDiv.innerHTML = '<strong>🔍 VISOR DEBUG HUD</strong><br>' +
       'isDxfMode: ' + this.isDxfMode + '<br>' +
       'zoomLevel: ' + this.zoomLevel + '<br>' +
       'canvases: V1=' + v1Ok + ', V2=' + v2Ok + ', Diff=' + diffOk + '<br>' +
       'diffCanvasStyle: ' + diffW + ' x ' + diffH + ' (max:' + diffMax + ')<br>' +
       'containerStyle: ' + contW + ' (display:' + contDisp + ')<br>' +
-      'wrapperDisplay: ' + wrapDisp;
+      'wrapperDisplay: ' + wrapDisp + dxfScaleText;
 
     if (!diffCanvas || !v1Canvas || !v2Canvas || !wrapper) return;
 
