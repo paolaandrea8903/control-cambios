@@ -646,10 +646,9 @@ class PdfViewerComponent {
 
       this.processAIPDFChanges(result.clouds, t1, t2, w, h);
 
-      // 5. Renderizar composición WebGL en pantalla
-      this.renderWebGL();
-
+      // 5. Renderizar composición WebGL en pantalla y aplicar estilos de visualización correctos
       this.updatePaginationUI();
+      this.updateZoomRendering(true);
       return;
     }
     
@@ -1292,6 +1291,7 @@ class PdfViewerComponent {
       diffCanvas.style.display = 'block';
       
       if (container) {
+        container.style.display = 'block';
         container.style.flex = '1';
         container.style.width = '100%';
         container.style.height = '100%';
@@ -1317,11 +1317,13 @@ class PdfViewerComponent {
 
     if (container) {
       if (this.zoomLevel > 1.0) {
+        container.style.display = 'inline-block';
         container.style.flex = 'none';
         container.style.flexShrink = '0';
         container.style.width = `${zoomedWidth}px`;
         container.style.height = 'auto';
       } else {
+        container.style.display = 'inline-block';
         container.style.flex = '';
         container.style.flexShrink = '';
         container.style.width = '';
