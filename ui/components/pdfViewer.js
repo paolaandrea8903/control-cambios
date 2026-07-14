@@ -938,8 +938,8 @@ class PdfViewerComponent {
       v2Canvas.style.display = 'inline-block';
     }
 
-    // Aplicar dimensiones de zoom
-    this.updateZoomRendering();
+    // Aplicar dimensiones de zoom (evitando bucle de redibujo DXF)
+    this.updateZoomRendering(true);
   }
 
   updateCanvasOpacity(opacity) {
@@ -1115,7 +1115,7 @@ class PdfViewerComponent {
     this.uiManager.updateHeaderBadges();
   }
 
-  updateZoomRendering() {
+  updateZoomRendering(skipRedraw = false) {
     const v1Canvas = this.canvasV1;
     const v2Canvas = this.canvasV2;
     const diffCanvas = this.canvasDiff;
@@ -1161,6 +1161,8 @@ class PdfViewerComponent {
         wrapper.style.justifyContent = 'center';
         wrapper.style.padding = '0';
       }
+
+      if (skipRedraw) return;
 
       this.uiManager.showLoader(true, "Ajustando resolución vectorial...");
       setTimeout(async () => {
