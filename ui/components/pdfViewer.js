@@ -1126,6 +1126,36 @@ class PdfViewerComponent {
       zoomValText.textContent = `${Math.round(this.zoomLevel * 100)}%`;
     }
 
+    // Dynamic Diagnostic HUD
+    let debugDiv = document.getElementById('zoom-debug');
+    if (!debugDiv) {
+      debugDiv = document.createElement('div');
+      debugDiv.id = 'zoom-debug';
+      debugDiv.style.position = 'fixed';
+      debugDiv.style.bottom = '10px';
+      debugDiv.style.right = '10px';
+      debugDiv.style.background = 'rgba(15, 23, 42, 0.9)';
+      debugDiv.style.border = '1px solid #334155';
+      debugDiv.style.color = '#38bdf8';
+      debugDiv.style.padding = '12px';
+      debugDiv.style.zIndex = '100000';
+      debugDiv.style.fontFamily = 'monospace';
+      debugDiv.style.fontSize = '11px';
+      debugDiv.style.borderRadius = '6px';
+      debugDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+      document.body.appendChild(debugDiv);
+    }
+    const container = document.getElementById('bp-canvas-container');
+    debugDiv.innerHTML = `
+      <strong>🔍 VISOR DEBUG HUD</strong><br>
+      isDxfMode: ${this.isDxfMode}<br>
+      zoomLevel: ${this.zoomLevel}<br>
+      canvases: V1=${!!v1Canvas}, V2=${!!v2Canvas}, Diff=${!!diffCanvas}<br>
+      diffCanvasStyle: ${diffCanvas ? `${diffCanvas.style.width} x ${diffCanvas.style.height} (max:${diffCanvas.style.maxWidth})` : 'N/A'}<br>
+      containerStyle: ${container ? `${container.style.width} (display:${container.style.display})` : 'N/A'}<br>
+      wrapperDisplay: ${wrapper ? wrapper.style.display : 'N/A'}
+    `;
+
     if (!diffCanvas || !v1Canvas || !v2Canvas || !wrapper) return;
 
     if (this.isDxfMode) {
