@@ -18,7 +18,7 @@ class DxfModule {
   async parse(file) {
     try {
       const text = await file.text();
-      const lines = text.split(/\r?\n/);
+      const lines = text.split(/\r\n|\r|\n/);
       const elements = [];
       
       let currentEntity = null;
@@ -86,6 +86,12 @@ class DxfModule {
       }
 
       console.log(`DXF leído: ${file.name}, Elementos extraídos: ${elements.length}`);
+      
+      // Diagnóstico temporal en caso de que no cargue nada
+      if (elements.length === 0) {
+        alert("Diagnóstico de Lectura DXF:\nArchivo: " + file.name + "\nLíneas leídas: " + lines.length + "\nTamaño de texto: " + text.length + " caracteres.\nPrimeros 150 caracteres: " + text.substring(0, 150).replace(/\r/g, '\\r').replace(/\n/g, '\\n'));
+      }
+      
       return elements;
     } catch (err) {
       console.error("Error al parsear el archivo DXF:", err);
