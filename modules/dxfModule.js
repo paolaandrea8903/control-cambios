@@ -18,61 +18,74 @@ class DxfModule {
   async parse(file) {
     try {
       const text = await file.text();
-      // Dividir por líneas
       const lines = text.split(/\r?\n/);
       const elements = [];
       
       let currentEntity = null;
       let groupCode = null;
       
+      let waitingForValue = false;
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (line === '') continue;
+        
+        // No saltar líneas vacías para no desalinear pares, a menos que no estemos esperando valor
+        if (line === '' && !waitingForValue) continue;
 
-        // En DXF, las líneas impares (0-indexed 0, 2, 4...) contienen el código de grupo
-        if (i % 2 === 0) {
+        if (!waitingForValue) {
           groupCode = parseInt(line, 10);
+          waitingForValue = true;
         } else {
-          // Las líneas pares contienen el valor del grupo
           const val = line;
+          waitingForValue = false;
           
           if (groupCode === 0) {
-            // Se inicia una nueva entidad
             if (currentEntity) {
               const el = this.createCoreElement(currentEntity, file.name);
               if (el) elements.push(el);
             }
-            currentEntity = { type: val, layer: '0', text: '', x: 0, y: 0 };
+            currentEntity = { type: val, layer: '0', text: '', x: 0, y: 0, x2: 0, y2: 0, vertices: [] };
           } else if (currentEntity) {
-            // Asignación de propiedades según código de grupo DXF estándar
             switch (groupCode) {
-              case 8: // Nombre de la capa
+              case 8:
                 currentEntity.layer = val;
                 break;
-              case 1: // Valor de texto principal
+              case 1:
                 currentEntity.text = val;
                 break;
-              case 3: // Texto secundario o extensión de MTEXT
+              case 3:
                 currentEntity.text += val;
                 break;
-              case 10: // Coordenada X
-                currentEntity.x = parseFloat(val);
+              case 10:
+                if (currentEntity.type === 'LWPOLYLINE') {
+                  currentEntity.vertices.push([parseFloat(val), 0]);
+                } else {
+                  currentEntity.x = parseFloat(val);
+                }
                 break;
-              case 20: // Coordenada Y
-                currentEntity.y = parseFloat(val);
+              case 20:
+                if (currentEntity.type === 'LWPOLYLINE' && currentEntity.vertices.length > 0) {
+                  currentEntity.vertices[currentEntity.vertices.length - 1][1] = parseFloat(val);
+                } else {
+                  currentEntity.y = parseFloat(val);
+                }
+                break;
+              case 11:
+                currentEntity.x2 = parseFloat(val);
+                break;
+              case 21:
+                currentEntity.y2 = parseFloat(val);
                 break;
             }
           }
         }
       }
       
-      // Procesar última entidad
       if (currentEntity) {
         const el = this.createCoreElement(currentEntity, file.name);
         if (el) elements.push(el);
       }
 
-      console.log(`DXF leído: ${file.name}, Elementos de texto extraídos: ${elements.length}`);
+      console.log(`DXF leído: ${file.name}, Elementos extraídos: ${elements.length}`);
       return elements;
     } catch (err) {
       console.error("Error al parsear el archivo DXF:", err);
@@ -81,40 +94,94 @@ class DxfModule {
   }
 
   /**
-   * Traduce la entidad DXF en un Elemento compatible con el ChangeEngine del núcleo.
+   * Traduce la entidad DXF en un Elemento compatible con el ChangeEngine.
    */
   createCoreElement(entity, fileName) {
-    // Nos centramos en textos (TEXT y MTEXT) ya que contienen las especificaciones técnicas y cotas
-    if (entity.type !== 'TEXT' && entity.type !== 'MTEXT') {
-      return null;
+    const layer = entity.layer || '0';
+    
+    if (entity.type === 'TEXT' || entity.type === 'MTEXT') {
+      if (!entity.text || entity.text.trim() === '') return null;
+      let cleanText = entity.text
+        .replace(/\\[A-Za-z0-9]+;/g, '')
+        .replace(/\\P/g, ' ')
+        .replace(/[{}\n\r]/g, '')
+        .trim();
+      if (cleanText.length < 2) return null;
+      
+      return new Element(
+        `dxf_txt___${layer.toLowerCase()}___${Math.round(entity.x)}_${Math.round(entity.y)}`,
+        'plano_texto',
+        `Anotación en Capa [${layer}]`,
+        {
+          text: cleanText,
+          layer: layer,
+          coords: [entity.x, entity.y],
+          type: 'text',
+          fileName: fileName
+        },
+        null
+      );
     }
     
-    if (!entity.text || entity.text.trim() === '') return null;
+    if (entity.type === 'LINE') {
+      const length = Math.sqrt((entity.x2 - entity.x) ** 2 + (entity.y2 - entity.y) ** 2);
+      if (length < 0.5) return null; // Ignorar micro-líneas
+      
+      return new Element(
+        `dxf_line___${layer.toLowerCase()}___${Math.round(entity.x)}_${Math.round(entity.y)}___${Math.round(entity.x2)}_${Math.round(entity.y2)}`,
+        'plano_grafico',
+        `Línea en Capa [${layer}]`,
+        {
+          type: 'line',
+          layer: layer,
+          start: [entity.x, entity.y],
+          end: [entity.x2, entity.y2],
+          length: length,
+          fileName: fileName
+        },
+        null
+      );
+    }
     
-    // Limpiar códigos de escape de AutoCAD (ej: \A1; \P, etc.)
-    let cleanText = entity.text
-      .replace(/\\[A-Za-z0-9]+;/g, '')
-      .replace(/\\P/g, ' ')
-      .replace(/[{}\n\r]/g, '')
-      .trim();
-
-    if (cleanText.length < 2) return null;
+    if (entity.type === 'LWPOLYLINE' && entity.vertices.length >= 2) {
+      // Calcular perímetro
+      let perimeter = 0;
+      const n = entity.vertices.length;
+      for (let i = 0; i < n; i++) {
+        const p1 = entity.vertices[i];
+        const p2 = entity.vertices[(i + 1) % n];
+        perimeter += Math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2);
+      }
+      
+      // Calcular área usando la fórmula de Shoelace
+      let area = 0;
+      for (let i = 0; i < n; i++) {
+        const p1 = entity.vertices[i];
+        const p2 = entity.vertices[(i + 1) % n];
+        area += p1[0] * p2[1] - p2[0] * p1[1];
+      }
+      area = Math.abs(area / 2);
+      
+      const centroidX = entity.vertices.reduce((sum, v) => sum + v[0], 0) / n;
+      const centroidY = entity.vertices.reduce((sum, v) => sum + v[1], 0) / n;
+      
+      return new Element(
+        `dxf_poly___${layer.toLowerCase()}___${Math.round(centroidX)}_${Math.round(centroidY)}`,
+        'plano_grafico',
+        `Polilínea en Capa [${layer}]`,
+        {
+          type: 'polyline',
+          layer: layer,
+          vertices: entity.vertices,
+          area: area,
+          perimeter: perimeter,
+          fileName: fileName
+        },
+        null
+      );
+    }
     
-    // ID único basado en capa y coordenadas espaciales
-    const elementId = `dxf_txt___${entity.layer.toLowerCase()}___${Math.round(entity.x)}_${Math.round(entity.y)}`;
-    
-    return new Element(
-      elementId,
-      'plano_texto',
-      `Texto en Capa [${entity.layer}]`,
-      {
-        text: cleanText,
-        layer: entity.layer,
-        coords: [entity.x, entity.y],
-        fileName: fileName
-      },
-      null
-    );
+    return null;
   }
 }
 

@@ -77,13 +77,19 @@ class PdfViewerComponent {
         dropzone.style.borderColor = 'var(--border-color)';
         dropzone.style.background = 'rgba(255,255,255,0.02)';
       });
+      dropzone.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+      });
       dropzone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropzone.style.borderColor = 'var(--border-color)';
         dropzone.style.background = 'rgba(255,255,255,0.02)';
         const file = e.dataTransfer.files[0];
-        if (file && file.name.endsWith('.pdf')) {
-          this.handleFileSelect(file, idx + 1);
+        if (file) {
+          const lowerName = file.name.toLowerCase();
+          if (lowerName.endsWith('.pdf') || lowerName.endsWith('.dxf') || lowerName.endsWith('.dwg')) {
+            this.handleFileSelect(file, idx + 1);
+          }
         }
       });
     });
