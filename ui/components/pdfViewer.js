@@ -512,8 +512,8 @@ class PdfViewerComponent {
     this.isComparing = true;
     
     if (this.isDxfMode) {
-      // Limitar resolución del canvas (backing store) a un máx de 2400px para evitar desbordamiento de memoria en getImageData
-      const maxBackingW = 2400;
+      // Limitar resolución del canvas (backing store) a un máx de 3600px para mantener rendimiento ultra-rápido en getImageData
+      const maxBackingW = 3600;
       const backingScale = Math.min(1.0, maxBackingW / (1200 * this.zoomLevel));
       const w = Math.round(1200 * this.zoomLevel * backingScale);
       const h = Math.round(800 * this.zoomLevel * backingScale);
@@ -1391,11 +1391,11 @@ class PdfViewerComponent {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.strokeStyle = '#0f172a'; // Gris oscuro para trazo CAD
-    ctx.lineWidth = 1;
 
     ctx.save();
     ctx.translate(dx, dy);
     ctx.scale(scale, scale);
+    ctx.lineWidth = 1 / scale; // Mantener líneas finas y nítidas de 1px a cualquier zoom
 
     // Dibujar elementos gráficos
     elements.forEach(el => {

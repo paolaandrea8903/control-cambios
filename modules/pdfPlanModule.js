@@ -141,9 +141,9 @@ class PdfPlanModule {
     const imgData2 = ctx2.getImageData(0, 0, width, height);
     const diffData = ctxDiff.createImageData(width, height);
 
-    const d1 = imgData1.data;
-    const d2 = imgData2.data;
-    const df = diffData.data;
+    const buf1 = new Uint32Array(imgData1.data.buffer);
+    const buf2 = new Uint32Array(imgData2.data.buffer);
+    const bufDiff = new Uint32Array(diffData.data.buffer);
 
     let diffPixelsCount = 0;
     const gridSize = 20;
@@ -151,56 +151,62 @@ class PdfPlanModule {
     const rows = Math.ceil(height / gridSize);
     const grid = Array(rows).fill(null).map(() => Array(cols).fill(0));
 
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = (y * width + x) * 4;
-        const r1 = d1[idx], g1 = d1[idx+1], b1 = d1[idx+2], a1 = d1[idx+3];
-        const r2 = d2[idx], g2 = d2[idx+1], b2 = d2[idx+2], a2 = d2[idx+3];
+    // Colores Little-Endian (Formato: 0xAABBGGRR)
+    const COLOR_WHITE = 0xFFFFFFFF;
+    const COLOR_RED = 0xFF4444EF;     // (239, 68, 68, 255) -> Rojo (Eliminado)
+    const COLOR_GREEN = 0xFF81B910;   // (16, 185, 129, 255) -> Verde (Añadido)
+    const COLOR_YELLOW = 0xFF0B9EF5;  // (245, 158, 11, 255) -> Amarillo (Modificado)
+    const COLOR_GREY = 0xFFB8A394;    // (148, 163, 184, 255) -> Gris (Común)
 
-        // Fondo es considerado blanco o transparente
-        const isBg1 = (r1 > 240 && g1 > 240 && b1 > 240) || a1 === 0;
-        const isBg2 = (r2 > 240 && g2 > 240 && b2 > 240) || a2 === 0;
+    const len = buf1.length;
+    for (let i = 0; i < len; i++) {
+      const val1 = buf1[i];
+      const val2 = buf2[i];
 
-        if (isBg1 && isBg2) {
-          // Fondo blanco para alta visibilidad y apariencia de papel
-          df[idx] = 255;
-          df[idx+1] = 255;
-          df[idx+2] = 255;
-          df[idx+3] = 255;
-        } else if (!isBg1 && isBg2) {
-          // Eliminado (Rojo)
-          df[idx] = 239;
-          df[idx+1] = 68;
-          df[idx+2] = 68;
-          df[idx+3] = 255;
-          diffPixelsCount++;
-          grid[Math.floor(y / gridSize)][Math.floor(x / gridSize)]++;
-        } else if (isBg1 && !isBg2) {
-          // Añadido (Verde)
-          df[idx] = 16;
-          df[idx+1] = 185;
-          df[idx+2] = 129;
-          df[idx+3] = 255;
-          diffPixelsCount++;
-          grid[Math.floor(y / gridSize)][Math.floor(x / gridSize)]++;
+      // Fast-path: si los píxeles son idénticos
+      if (val1 === val2) {
+        if (val1 === 0 || val1 === COLOR_WHITE) {
+          bufDiff[i] = COLOR_WHITE;
         } else {
-          // Coincidencia o cambio de color
-          const colorDiff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
-          if (colorDiff > 60) {
-            // Modificado (Amarillo)
-            df[idx] = 245;
-            df[idx+1] = 158;
-            df[idx+2] = 11;
-            df[idx+3] = 255;
-            diffPixelsCount++;
-            grid[Math.floor(y / gridSize)][Math.floor(x / gridSize)]++;
-          } else {
-            // Elemento común sin cambios (Gris pizarra de alta visibilidad)
-            df[idx] = 148;
-            df[idx+1] = 163;
-            df[idx+2] = 184;
-            df[idx+3] = 255;
-          }
+          bufDiff[i] = COLOR_GREY;
+        }
+        continue;
+      }
+
+      // Extraer canales de color
+      const r1 = val1 & 0xFF, g1 = (val1 >> 8) & 0xFF, b1 = (val1 >> 16) & 0xFF, a1 = (val1 >> 24) & 0xFF;
+      const r2 = val2 & 0xFF, g2 = (val2 >> 8) & 0xFF, b2 = (val2 >> 16) & 0xFF, a2 = (val2 >> 24) & 0xFF;
+
+      const isBg1 = (r1 > 240 && g1 > 240 && b1 > 240) || a1 === 0;
+      const isBg2 = (r2 > 240 && g2 > 240 && b2 > 240) || a2 === 0;
+
+      const x = i % width;
+      const y = Math.floor(i / width);
+      const gridX = Math.floor(x / gridSize);
+      const gridY = Math.floor(y / gridSize);
+
+      // Limitar coordenadas de grid para evitar desbordamiento
+      const gY = Math.min(gridY, rows - 1);
+      const gX = Math.min(gridX, cols - 1);
+
+      if (isBg1 && isBg2) {
+        bufDiff[i] = COLOR_WHITE;
+      } else if (!isBg1 && isBg2) {
+        bufDiff[i] = COLOR_RED;
+        diffPixelsCount++;
+        grid[gY][gX]++;
+      } else if (isBg1 && !isBg2) {
+        bufDiff[i] = COLOR_GREEN;
+        diffPixelsCount++;
+        grid[gY][gX]++;
+      } else {
+        const colorDiff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+        if (colorDiff > 60) {
+          bufDiff[i] = COLOR_YELLOW;
+          diffPixelsCount++;
+          grid[gY][gX]++;
+        } else {
+          bufDiff[i] = COLOR_GREY;
         }
       }
     }
