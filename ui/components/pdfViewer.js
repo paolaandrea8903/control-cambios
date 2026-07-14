@@ -1098,30 +1098,84 @@ class PdfViewerComponent {
   }
 
   calculateDxfBoundingBox(elements) {
+    // 1. Agrupar puntos por capa y contar
+    const layerPoints = {};
+    elements.forEach(el => {
+      if (el.type === 'plano_grafico') {
+        const layer = el.data.layer || '0';
+        if (!layerPoints[layer]) {
+          layerPoints[layer] = [];
+        }
+        const geom = el.data;
+        if (geom.type === 'line') {
+          layerPoints[layer].push(geom.start, geom.end);
+        } else if (geom.type === 'polyline') {
+          layerPoints[layer].push(...geom.vertices);
+        }
+      }
+    });
+
+    // 2. Filtrar capas que son metadatos/cajetines o escalas (cuyo nombre contiene palabras clave)
+    const metadataKeywords = ['escala', 'grafica', 'gràfica', 'grãfica', 'ventana', 'viewport', 'layout', 'cajetin', '0'];
+    let mainLayer = null;
+    let maxPoints = 0;
+
+    for (const [layer, pts] of Object.entries(layerPoints)) {
+      const isMetadata = metadataKeywords.some(kw => layer.toLowerCase().includes(kw));
+      if (!isMetadata && pts.length > maxPoints) {
+        maxPoints = pts.length;
+        mainLayer = layer;
+      }
+    }
+
+    // Si no se encontró una capa principal sin metadatos, tomamos la que tenga más puntos de todas
+    if (!mainLayer) {
+      for (const [layer, pts] of Object.entries(layerPoints)) {
+        if (pts.length > maxPoints) {
+          maxPoints = pts.length;
+          mainLayer = layer;
+        }
+      }
+    }
+
+    // 3. Calcular la caja de límites utilizando solo los puntos de la capa principal seleccionada
     let minX = Infinity, minY = Infinity;
     let maxX = -Infinity, maxY = -Infinity;
     let found = false;
 
-    elements.forEach(el => {
-      if (el.type === 'plano_grafico') {
-        const geom = el.data;
-        if (geom.type === 'line') {
-          minX = Math.min(minX, geom.start[0], geom.end[0]);
-          minY = Math.min(minY, geom.start[1], geom.end[1]);
-          maxX = Math.max(maxX, geom.start[0], geom.end[0]);
-          maxY = Math.max(maxY, geom.start[1], geom.end[1]);
-          found = true;
-        } else if (geom.type === 'polyline') {
-          geom.vertices.forEach(v => {
-            minX = Math.min(minX, v[0]);
-            minY = Math.min(minY, v[1]);
-            maxX = Math.max(maxX, v[0]);
-            maxY = Math.max(maxY, v[1]);
+    if (mainLayer && layerPoints[mainLayer]) {
+      layerPoints[mainLayer].forEach(p => {
+        minX = Math.min(minX, p[0]);
+        minY = Math.min(minY, p[1]);
+        maxX = Math.max(maxX, p[0]);
+        maxY = Math.max(maxY, p[1]);
+        found = true;
+      });
+    }
+
+    if (!found) {
+      // Fallback a todos los elementos si falla la selección de capa principal
+      elements.forEach(el => {
+        if (el.type === 'plano_grafico') {
+          const geom = el.data;
+          if (geom.type === 'line') {
+            minX = Math.min(minX, geom.start[0], geom.end[0]);
+            minY = Math.min(minY, geom.start[1], geom.end[1]);
+            maxX = Math.max(maxX, geom.start[0], geom.end[0]);
+            maxY = Math.max(maxY, geom.start[1], geom.end[1]);
             found = true;
-          });
+          } else if (geom.type === 'polyline') {
+            geom.vertices.forEach(v => {
+              minX = Math.min(minX, v[0]);
+              minY = Math.min(minY, v[1]);
+              maxX = Math.max(maxX, v[0]);
+              maxY = Math.max(maxY, v[1]);
+              found = true;
+            });
+          }
         }
-      }
-    });
+      });
+    }
 
     if (!found) {
       return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 };
