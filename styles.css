@@ -1572,3 +1572,26 @@ body {
   background: rgba(255, 255, 255, 0.035) !important;
 }
 
+/* Zoom stages scrollbar and flex-bypass rules */
+.bp-stage-wrapper {
+  overflow: auto !important;
+}
+
+.bp-stage-wrapper.zoomed {
+  display: block !important;
+  padding: 20px !important;
+}
+
+#bp-canvas-container.zoomed {
+  display: inline-block !important;
+  flex: none !important;
+  flex-shrink: 0 !important;
+}
+
+#bp-canvas-diff.zoomed, 
+#bp-canvas-v1.zoomed, 
+#bp-canvas-v2.zoomed {
+  max-width: none !important;
+  display: block !important;
+}
+

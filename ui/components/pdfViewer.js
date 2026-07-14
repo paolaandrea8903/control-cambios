@@ -1182,6 +1182,18 @@ class PdfViewerComponent {
 
     if (!diffCanvas || !v1Canvas || !v2Canvas || !wrapper) return;
 
+    // Toggle zoomed class on elements to guarantee styling
+    const elementsToToggle = [wrapper, container, diffCanvas, v1Canvas, v2Canvas];
+    if (this.zoomLevel > 1.0) {
+      elementsToToggle.forEach(el => {
+        if (el) el.classList.add('zoomed');
+      });
+    } else {
+      elementsToToggle.forEach(el => {
+        if (el) el.classList.remove('zoomed');
+      });
+    }
+
     if (this.isDxfMode) {
       const w = 1200 * this.zoomLevel;
       const h = 800 * this.zoomLevel;
