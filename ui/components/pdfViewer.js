@@ -263,13 +263,13 @@ class PdfViewerComponent {
     
     if (btnZoomIn) {
       btnZoomIn.onclick = () => {
-        this.zoomLevel = Math.min(3.0, this.zoomLevel + 0.25);
+        this.zoomLevel = Math.min(10.0, this.zoomLevel + 0.5);
         this.updateZoomRendering();
       };
     }
     if (btnZoomOut) {
       btnZoomOut.onclick = () => {
-        this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.25);
+        this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.5);
         this.updateZoomRendering();
       };
     }
