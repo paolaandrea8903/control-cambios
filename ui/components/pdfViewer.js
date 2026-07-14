@@ -1146,15 +1146,23 @@ class PdfViewerComponent {
       document.body.appendChild(debugDiv);
     }
     const container = document.getElementById('bp-canvas-container');
-    debugDiv.innerHTML = `
-      <strong>🔍 VISOR DEBUG HUD</strong><br>
-      isDxfMode: ${this.isDxfMode}<br>
-      zoomLevel: ${this.zoomLevel}<br>
-      canvases: V1=${!!v1Canvas}, V2=${!!v2Canvas}, Diff=${!!diffCanvas}<br>
-      diffCanvasStyle: ${diffCanvas ? `${diffCanvas.style.width} x ${diffCanvas.style.height} (max:${diffCanvas.style.maxWidth})` : 'N/A'}<br>
-      containerStyle: ${container ? `${container.style.width} (display:${container.style.display})` : 'N/A'}<br>
-      wrapperDisplay: ${wrapper ? wrapper.style.display : 'N/A'}
-    `;
+    const v1Ok = v1Canvas ? 'SI' : 'NO';
+    const v2Ok = v2Canvas ? 'SI' : 'NO';
+    const diffOk = diffCanvas ? 'SI' : 'NO';
+    const diffW = diffCanvas ? diffCanvas.style.width : 'N/A';
+    const diffH = diffCanvas ? diffCanvas.style.height : 'N/A';
+    const diffMax = diffCanvas ? diffCanvas.style.maxWidth : 'N/A';
+    const contW = container ? container.style.width : 'N/A';
+    const contDisp = container ? container.style.display : 'N/A';
+    const wrapDisp = wrapper ? wrapper.style.display : 'N/A';
+
+    debugDiv.innerHTML = '<strong>🔍 VISOR DEBUG HUD</strong><br>' +
+      'isDxfMode: ' + this.isDxfMode + '<br>' +
+      'zoomLevel: ' + this.zoomLevel + '<br>' +
+      'canvases: V1=' + v1Ok + ', V2=' + v2Ok + ', Diff=' + diffOk + '<br>' +
+      'diffCanvasStyle: ' + diffW + ' x ' + diffH + ' (max:' + diffMax + ')<br>' +
+      'containerStyle: ' + contW + ' (display:' + contDisp + ')<br>' +
+      'wrapperDisplay: ' + wrapDisp;
 
     if (!diffCanvas || !v1Canvas || !v2Canvas || !wrapper) return;
 
