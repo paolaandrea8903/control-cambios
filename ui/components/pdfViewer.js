@@ -125,6 +125,9 @@ class PdfViewerComponent {
         startY = e.clientY - stageWrapper.offsetTop;
         scrollLeft = stageWrapper.scrollLeft;
         scrollTop = stageWrapper.scrollTop;
+        
+        this.lastMouseX = e.clientX;
+        this.lastMouseY = e.clientY;
       });
 
       stageWrapper.addEventListener('mouseleave', () => {
@@ -140,12 +143,28 @@ class PdfViewerComponent {
       stageWrapper.addEventListener('mousemove', (e) => {
         if (!isPanning) return;
         e.preventDefault();
-        const x = e.clientX - stageWrapper.offsetLeft;
-        const y = e.clientY - stageWrapper.offsetTop;
-        const walkX = (x - startX);
-        const walkY = (y - startY);
-        stageWrapper.scrollLeft = scrollLeft - walkX;
-        stageWrapper.scrollTop = scrollTop - walkY;
+        
+        if (this.isDxfMode && this.webglInitialized) {
+          const dx = e.clientX - this.lastMouseX;
+          const dy = e.clientY - this.lastMouseY;
+          this.lastMouseX = e.clientX;
+          this.lastMouseY = e.clientY;
+          
+          const screenW = this.canvasDiff.clientWidth || 1200;
+          const cadW = (this.camera.right - this.camera.left) / this.camera.zoom;
+          const ratio = cadW / screenW;
+          
+          this.camera.position.x -= dx * ratio;
+          this.camera.position.y += dy * ratio;
+          this.renderWebGL();
+        } else {
+          const x = e.clientX - stageWrapper.offsetLeft;
+          const y = e.clientY - stageWrapper.offsetTop;
+          const walkX = (x - startX);
+          const walkY = (y - startY);
+          stageWrapper.scrollLeft = scrollLeft - walkX;
+          stageWrapper.scrollTop = scrollTop - walkY;
+        }
       });
 
       // Touch events for mobile/tablet panning
@@ -156,6 +175,9 @@ class PdfViewerComponent {
         startY = e.touches[0].clientY - stageWrapper.offsetTop;
         scrollLeft = stageWrapper.scrollLeft;
         scrollTop = stageWrapper.scrollTop;
+        
+        this.lastMouseX = e.touches[0].clientX;
+        this.lastMouseY = e.touches[0].clientY;
       });
 
       stageWrapper.addEventListener('touchend', () => {
@@ -164,13 +186,48 @@ class PdfViewerComponent {
 
       stageWrapper.addEventListener('touchmove', (e) => {
         if (!isPanning) return;
-        const x = e.touches[0].clientX - stageWrapper.offsetLeft;
-        const y = e.touches[0].clientY - stageWrapper.offsetTop;
-        const walkX = (x - startX);
-        const walkY = (y - startY);
-        stageWrapper.scrollLeft = scrollLeft - walkX;
-        stageWrapper.scrollTop = scrollTop - walkY;
+        
+        if (this.isDxfMode && this.webglInitialized) {
+          const dx = e.touches[0].clientX - this.lastMouseX;
+          const dy = e.touches[0].clientY - this.lastMouseY;
+          this.lastMouseX = e.touches[0].clientX;
+          this.lastMouseY = e.touches[0].clientY;
+          
+          const screenW = this.canvasDiff.clientWidth || 1200;
+          const cadW = (this.camera.right - this.camera.left) / this.camera.zoom;
+          const ratio = cadW / screenW;
+          
+          this.camera.position.x -= dx * ratio;
+          this.camera.position.y += dy * ratio;
+          this.renderWebGL();
+        } else {
+          const x = e.touches[0].clientX - stageWrapper.offsetLeft;
+          const y = e.touches[0].clientY - stageWrapper.offsetTop;
+          const walkX = (x - startX);
+          const walkY = (y - startY);
+          stageWrapper.scrollLeft = scrollLeft - walkX;
+          stageWrapper.scrollTop = scrollTop - walkY;
+        }
       });
+
+      // Mouse wheel zoom for CAD
+      stageWrapper.addEventListener('wheel', (e) => {
+        if (this.isDxfMode && this.webglInitialized) {
+          e.preventDefault();
+          const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+          this.zoomLevel = Math.max(1.0, Math.min(10.0, this.zoomLevel * zoomFactor));
+          
+          this.camera.zoom = this.zoomLevel;
+          this.camera.updateProjectionMatrix();
+          
+          const zoomValText = document.getElementById('bp-zoom-val');
+          if (zoomValText) {
+            zoomValText.textContent = `${Math.round(this.zoomLevel * 100)}%`;
+          }
+          
+          this.renderWebGL();
+        }
+      }, { passive: false });
     }
 
     // Action buttons
@@ -512,11 +569,58 @@ class PdfViewerComponent {
     this.isComparing = true;
     
     if (this.isDxfMode) {
-      // Limitar resolución del canvas (backing store) a un máx de 3600px para mantener rendimiento ultra-rápido en getImageData
-      const maxBackingW = 3600;
-      const backingScale = Math.min(1.0, maxBackingW / (1200 * this.zoomLevel));
-      const w = Math.round(1200 * this.zoomLevel * backingScale);
-      const h = Math.round(800 * this.zoomLevel * backingScale);
+      // 1. Inicializar WebGL
+      this.initWebGL();
+
+      // 2. Construir geometrías vectoriales en WebGL
+      this.buildDxfWebGLGeometries(this.v1DxfElements, this.sceneV1);
+      this.buildDxfWebGLGeometries(this.v2DxfElements, this.sceneV2);
+
+      // 3. Calcular límites de vectores
+      const bbox2 = this.calculateDxfBoundingBox(this.v2DxfElements || []);
+      const bbox1 = this.calculateDxfBoundingBox(this.v1DxfElements || []);
+      const bbox = bbox2.width > 0 ? bbox2 : (bbox1.width > 0 ? bbox1 : { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 });
+
+      // Ajustar cámara ortográfica inicial para encuadrar todo el plano
+      const padX = bbox.width * 0.05;
+      const padY = bbox.height * 0.05;
+
+      this.webglBbox = bbox;
+      this.webglPadX = padX;
+      this.webglPadY = padY;
+
+      this.camera.left = bbox.minX - padX;
+      this.camera.right = bbox.maxX + padX;
+      this.camera.bottom = bbox.minY - padY;
+      this.camera.top = bbox.maxY + padY;
+      this.camera.position.set((bbox.minX + bbox.maxX)/2, (bbox.minY + bbox.maxY)/2, 10);
+      this.camera.zoom = this.zoomLevel;
+      this.camera.updateProjectionMatrix();
+
+      // 4. Renderizar vistas offscreen a render targets de 2048x2048 para comparación de píxeles (CPU readback)
+      const w = this.rtWidth;
+      const h = this.rtHeight;
+      const bufferV1 = new Uint8Array(w * h * 4);
+      const bufferV2 = new Uint8Array(w * h * 4);
+
+      this.renderer.setRenderTarget(this.rtV1);
+      this.renderer.render(this.sceneV1, this.camera);
+      this.renderer.readRenderTargetPixels(this.rtV1, 0, 0, w, h, bufferV1);
+
+      this.renderer.setRenderTarget(this.rtV2);
+      this.renderer.render(this.sceneV2, this.camera);
+      this.renderer.readRenderTargetPixels(this.rtV2, 0, 0, w, h, bufferV2);
+
+      this.renderer.setRenderTarget(null); // Restaurar pantalla
+
+      // Voltear buffers verticalmente para adaptarlo al flujo 2D del Canvas
+      const flippedV1 = new Uint8Array(w * h * 4);
+      const flippedV2 = new Uint8Array(w * h * 4);
+      const rowBytes = w * 4;
+      for (let y = 0; y < h; y++) {
+        flippedV1.set(bufferV1.subarray(y * rowBytes, y * rowBytes + rowBytes), (h - 1 - y) * rowBytes);
+        flippedV2.set(bufferV2.subarray(y * rowBytes, y * rowBytes + rowBytes), (h - 1 - y) * rowBytes);
+      }
 
       this.canvasV1.width = w;
       this.canvasV1.height = h;
@@ -526,44 +630,26 @@ class PdfViewerComponent {
       const ctx1 = this.canvasV1.getContext('2d');
       const ctx2 = this.canvasV2.getContext('2d');
 
-      // Calcular limites de vectores
-      const bbox2 = this.calculateDxfBoundingBox(this.v2DxfElements || []);
-      const bbox1 = this.calculateDxfBoundingBox(this.v1DxfElements || []);
-      const bbox = bbox2.width > 0 ? bbox2 : (bbox1.width > 0 ? bbox1 : { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 });
+      const imgData1 = ctx1.createImageData(w, h);
+      const imgData2 = ctx2.createImageData(w, h);
+      imgData1.data.set(flippedV1);
+      imgData2.data.set(flippedV2);
+      ctx1.putImageData(imgData1, 0, 0);
+      ctx2.putImageData(imgData2, 0, 0);
 
-      const scale = Math.min((w - 60) / bbox.width, (h - 60) / bbox.height);
-      const dx = -bbox.minX * scale + (w - bbox.width * scale) / 2;
-      const dy = -bbox.minY * scale + (h - bbox.height * scale) / 2;
-
-      this.debugDxfScale = scale;
-      this.debugDxfDx = dx;
-      this.debugDxfDy = dy;
-      this.debugDxfBbox = bbox;
-      this.debugDxfW = w;
-      this.debugDxfH = h;
-
-      // Renderizar V1 en canvasV1 (aplicando nudge)
-      this.renderDxfToCanvas(this.v1DxfElements || [], this.canvasV1, ctx1, scale, dx + (this.v1OffsetX || 0), dy + (this.v1OffsetY || 0));
-
-      // Renderizar V2 en canvasV2
-      this.renderDxfToCanvas(this.v2DxfElements || [], this.canvasV2, ctx2, scale, dx, dy);
-
-      // Comparación de píxeles vectoriales nítidos
+      // Calcular diferencias visuales en CPU rápida para detectar cambios y generar nubes de revisión
       const result = await PdfPlanModule.computeVisualDiff(this.canvasV1, this.canvasV2, w, h);
 
-      this.canvasDiff.width = w;
-      this.canvasDiff.height = h;
-      const ctxDiff = this.canvasDiff.getContext('2d');
-      ctxDiff.drawImage(result.canvasDiff, 0, 0);
-
-      // Textos
+      // Extraer y procesar textos con IA
       const t1 = (this.v1DxfElements || []).filter(el => el.type === 'plano_texto').map(el => el.data.text).join(' ');
       const t2 = (this.v2DxfElements || []).filter(el => el.type === 'plano_texto').map(el => el.data.text).join(' ');
 
-      // Enriquecer
       this.processAIPDFChanges(result.clouds, t1, t2, w, h);
+
+      // 5. Renderizar composición WebGL en pantalla
+      this.renderWebGL();
+
       this.updatePaginationUI();
-      this.updateVisorRendering();
       return;
     }
     
@@ -1195,50 +1281,32 @@ class PdfViewerComponent {
     }
 
     if (this.isDxfMode) {
-      const w = 1200 * this.zoomLevel;
-      const h = 800 * this.zoomLevel;
+      // En modo DXF WebGL no usamos clases de zoom rasterizado ni scrollbars del navegador
+      elementsToToggle.forEach(el => {
+        if (el) el.classList.remove('zoomed');
+      });
 
-      diffCanvas.style.width = `${w}px`;
-      diffCanvas.style.maxWidth = 'none';
-      diffCanvas.style.height = `${h}px`;
+      diffCanvas.style.width = '100%';
+      diffCanvas.style.maxWidth = '100%';
+      diffCanvas.style.height = '100%';
+      diffCanvas.style.display = 'block';
       
-      v1Canvas.style.width = `${w}px`;
-      v1Canvas.style.maxWidth = 'none';
-      v1Canvas.style.height = `${h}px`;
-      
-      v2Canvas.style.width = `${w}px`;
-      v2Canvas.style.maxWidth = 'none';
-      v2Canvas.style.height = `${h}px`;
-
       if (container) {
-        container.style.flex = 'none';
-        container.style.flexShrink = '0';
-        container.style.width = `${w}px`;
-        container.style.height = `${h}px`;
+        container.style.flex = '1';
+        container.style.width = '100%';
+        container.style.height = '100%';
       }
 
-      if (this.zoomLevel > 1.0) {
-        wrapper.style.display = 'block';
-        wrapper.style.padding = '20px';
-      } else {
-        wrapper.style.display = 'flex';
-        wrapper.style.alignItems = 'center';
-        wrapper.style.justifyContent = 'center';
-        wrapper.style.padding = '0';
+      wrapper.style.display = 'flex';
+      wrapper.style.alignItems = 'center';
+      wrapper.style.justifyContent = 'center';
+      wrapper.style.padding = '0';
+
+      if (this.webglInitialized) {
+        this.camera.zoom = this.zoomLevel;
+        this.camera.updateProjectionMatrix();
+        this.renderWebGL();
       }
-
-      if (skipRedraw) return;
-
-      this.uiManager.showLoader(true, "Ajustando resolución vectorial...");
-      setTimeout(async () => {
-        try {
-          await this.compareAndRenderPage();
-        } catch (err) {
-          console.error(err);
-        } finally {
-          this.uiManager.showLoader(false);
-        }
-      }, 50);
       return;
     }
 
@@ -1430,5 +1498,159 @@ class PdfViewerComponent {
     });
 
     ctx.restore();
+  }
+
+  initWebGL() {
+    if (typeof THREE === 'undefined') {
+      console.warn("Three.js not loaded yet, retrying in 50ms...");
+      setTimeout(() => this.initWebGL(), 50);
+      return;
+    }
+    if (this.webglInitialized) return;
+    
+    const container = document.getElementById('bp-canvas-container');
+    if (!container) return;
+
+    const width = this.canvasDiff.clientWidth || 1200;
+    const height = this.canvasDiff.clientHeight || 800;
+
+    // Create the WebGL Renderer using our existing canvasDiff
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvasDiff, antialias: true, preserveDrawingBuffer: true, alpha: true });
+    this.renderer.setSize(width, height);
+    this.renderer.setPixelRatio(window.devicePixelRatio || 1);
+
+    // Create the Orthographic Camera
+    this.camera = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 1, 1000);
+    this.camera.position.z = 10;
+
+    // Create Scene V1 and Scene V2
+    this.sceneV1 = new THREE.Scene();
+    this.sceneV1.background = new THREE.Color(0x000000); // Black background for offscreen matching
+    
+    this.sceneV2 = new THREE.Scene();
+    this.sceneV2.background = new THREE.Color(0x000000);
+
+    // Offscreen render targets
+    this.rtWidth = 2048;
+    this.rtHeight = 2048;
+    this.rtV1 = new THREE.WebGLRenderTarget(this.rtWidth, this.rtHeight);
+    this.rtV2 = new THREE.WebGLRenderTarget(this.rtWidth, this.rtHeight);
+
+    // Screen composition scene (Shader quad)
+    this.sceneDiff = new THREE.Scene();
+    
+    const vertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      uniform sampler2D tV1;
+      uniform sampler2D tV2;
+      varying vec2 vUv;
+      void main() {
+        float l1 = texture2D(tV1, vUv).r;
+        float l2 = texture2D(tV2, vUv).r;
+        bool isLine1 = l1 > 0.1;
+        bool isLine2 = l2 > 0.1;
+        if (!isLine1 && !isLine2) {
+          gl_FragColor = vec4(1.0, 1.0, 1.0, 0.0); // Transparent background
+        } else if (isLine1 && !isLine2) {
+          gl_FragColor = vec4(0.937, 0.267, 0.267, 1.0); // Red (Deleted)
+        } else if (!isLine1 && isLine2) {
+          gl_FragColor = vec4(0.063, 0.725, 0.506, 1.0); // Green (Added)
+        } else {
+          gl_FragColor = vec4(0.58, 0.64, 0.72, 1.0); // Slate Gray (Common)
+        }
+      }
+    `;
+
+    this.diffMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        tV1: { value: null },
+        tV2: { value: null }
+      },
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      transparent: true
+    });
+
+    const quadGeo = new THREE.PlaneGeometry(2, 2);
+    const quad = new THREE.Mesh(quadGeo, this.diffMaterial);
+    this.sceneDiff.add(quad);
+
+    this.webglInitialized = true;
+    console.log("WebGL (Three.js) initialized successfully.");
+  }
+
+  buildDxfWebGLGeometries(elements, scene) {
+    // Clear existing objects
+    while (scene.children.length > 0) {
+      const obj = scene.children[0];
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) obj.material.dispose();
+      scene.remove(obj);
+    }
+
+    const linePositions = [];
+    (elements || []).forEach(el => {
+      if (el.type === 'plano_grafico') {
+        const geom = el.data;
+        if (geom.type === 'line') {
+          linePositions.push(
+            geom.start[0], geom.start[1], 0,
+            geom.end[0], geom.end[1], 0
+          );
+        } else if (geom.type === 'polyline' && geom.vertices.length > 1) {
+          for (let i = 0; i < geom.vertices.length - 1; i++) {
+            linePositions.push(
+              geom.vertices[i][0], geom.vertices[i][1], 0,
+              geom.vertices[i+1][0], geom.vertices[i+1][1], 0
+            );
+          }
+        }
+      }
+    });
+
+    if (linePositions.length === 0) return;
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+    
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 });
+    const lineSegments = new THREE.LineSegments(geometry, material);
+    scene.add(lineSegments);
+  }
+
+  renderWebGL() {
+    if (!this.webglInitialized) return;
+
+    // Render Scenes V1 and V2 to their respective render targets
+    this.renderer.setRenderTarget(this.rtV1);
+    this.renderer.render(this.sceneV1, this.camera);
+
+    this.renderer.setRenderTarget(this.rtV2);
+    this.renderer.render(this.sceneV2, this.camera);
+
+    // Swap textures to the composite shader
+    this.diffMaterial.uniforms.tV1.value = this.rtV1.texture;
+    this.diffMaterial.uniforms.tV2.value = this.rtV2.texture;
+
+    // Render screen composite
+    this.renderer.setRenderTarget(null);
+    
+    const width = this.canvasDiff.clientWidth || 1200;
+    const height = this.canvasDiff.clientHeight || 800;
+    
+    if (this.canvasDiff.width !== width || this.canvasDiff.height !== height) {
+      this.canvasDiff.width = width;
+      this.canvasDiff.height = height;
+      this.renderer.setSize(width, height);
+    }
+
+    this.renderer.render(this.sceneDiff, new THREE.Camera());
   }
 }
