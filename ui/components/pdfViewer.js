@@ -1153,10 +1153,10 @@ class PdfViewerComponent {
       }
 
       if (this.zoomLevel > 1.0) {
-        wrapper.style.alignItems = 'flex-start';
-        wrapper.style.justifyContent = 'flex-start';
+        wrapper.style.display = 'block';
         wrapper.style.padding = '20px';
       } else {
+        wrapper.style.display = 'flex';
         wrapper.style.alignItems = 'center';
         wrapper.style.justifyContent = 'center';
         wrapper.style.padding = '0';
@@ -1178,22 +1178,30 @@ class PdfViewerComponent {
     }
 
     const container = document.getElementById('bp-canvas-container');
-    if (container) {
-      container.style.flex = '';
-      container.style.flexShrink = '';
-      container.style.width = '';
-      container.style.height = '';
-    }
-
     const baseW = diffCanvas.width;
     if (!baseW) return;
 
-    // Si estamos haciendo zoom in, cambiamos el alineamiento de bp-stage-wrapper para permitir desplazamiento
+    const zoomedWidth = baseW * this.zoomLevel;
+
+    if (container) {
+      if (this.zoomLevel > 1.0) {
+        container.style.flex = 'none';
+        container.style.flexShrink = '0';
+        container.style.width = `${zoomedWidth}px`;
+        container.style.height = 'auto';
+      } else {
+        container.style.flex = '';
+        container.style.flexShrink = '';
+        container.style.width = '';
+        container.style.height = '';
+      }
+    }
+
     if (this.zoomLevel > 1.0) {
-      wrapper.style.alignItems = 'flex-start';
-      wrapper.style.justifyContent = 'flex-start';
+      wrapper.style.display = 'block';
       wrapper.style.padding = '20px';
     } else {
+      wrapper.style.display = 'flex';
       wrapper.style.alignItems = 'center';
       wrapper.style.justifyContent = 'center';
       wrapper.style.padding = '0';
@@ -1216,7 +1224,6 @@ class PdfViewerComponent {
       }
     } else {
       // Aplicar dimensiones explícitas según el nivel de zoom
-      const zoomedWidth = baseW * this.zoomLevel;
       if (this.displayMode === 'overlay') {
         diffCanvas.style.width = `${zoomedWidth}px`;
         diffCanvas.style.maxWidth = 'none';
