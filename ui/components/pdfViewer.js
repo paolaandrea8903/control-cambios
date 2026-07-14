@@ -1548,6 +1548,7 @@ class PdfViewerComponent {
     `;
 
     const fragmentShader = `
+      precision mediump float;
       uniform sampler2D tV1;
       uniform sampler2D tV2;
       varying vec2 vUv;
@@ -1581,6 +1582,9 @@ class PdfViewerComponent {
     const quadGeo = new THREE.PlaneGeometry(2, 2);
     const quad = new THREE.Mesh(quadGeo, this.diffMaterial);
     this.sceneDiff.add(quad);
+
+    // Standard Orthographic camera for NDC rendering
+    this.quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
     this.webglInitialized = true;
     console.log("WebGL (Three.js) initialized successfully.");
@@ -1651,6 +1655,6 @@ class PdfViewerComponent {
       this.renderer.setSize(width, height);
     }
 
-    this.renderer.render(this.sceneDiff, new THREE.Camera());
+    this.renderer.render(this.sceneDiff, this.quadCamera);
   }
 }
