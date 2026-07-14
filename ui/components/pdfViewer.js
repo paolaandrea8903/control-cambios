@@ -512,8 +512,11 @@ class PdfViewerComponent {
     this.isComparing = true;
     
     if (this.isDxfMode) {
-      const w = 1200 * this.zoomLevel;
-      const h = 800 * this.zoomLevel;
+      // Limitar resolución del canvas (backing store) a un máx de 2400px para evitar desbordamiento de memoria en getImageData
+      const maxBackingW = 2400;
+      const backingScale = Math.min(1.0, maxBackingW / (1200 * this.zoomLevel));
+      const w = Math.round(1200 * this.zoomLevel * backingScale);
+      const h = Math.round(800 * this.zoomLevel * backingScale);
 
       this.canvasV1.width = w;
       this.canvasV1.height = h;
