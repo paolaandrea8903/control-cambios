@@ -94,6 +94,85 @@ class PdfViewerComponent {
       });
     });
 
+    // Drag/Pan stage with hand cursor ("la manito")
+    const stageWrapper = document.getElementById('bp-stage-wrapper');
+    if (stageWrapper) {
+      let isPanning = false;
+      let startX = 0;
+      let startY = 0;
+      let scrollLeft = 0;
+      let scrollTop = 0;
+
+      const setCursor = (cursor) => {
+        stageWrapper.style.cursor = cursor;
+        const container = document.getElementById('bp-canvas-container');
+        if (container) container.style.cursor = cursor;
+        const v1 = document.getElementById('bp-canvas-v1');
+        const v2 = document.getElementById('bp-canvas-v2');
+        const diff = document.getElementById('bp-canvas-diff');
+        if (v1) v1.style.cursor = cursor;
+        if (v2) v2.style.cursor = cursor;
+        if (diff) diff.style.cursor = cursor;
+      };
+
+      setCursor('grab');
+
+      stageWrapper.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+        isPanning = true;
+        setCursor('grabbing');
+        startX = e.clientX - stageWrapper.offsetLeft;
+        startY = e.clientY - stageWrapper.offsetTop;
+        scrollLeft = stageWrapper.scrollLeft;
+        scrollTop = stageWrapper.scrollTop;
+      });
+
+      stageWrapper.addEventListener('mouseleave', () => {
+        isPanning = false;
+        setCursor('grab');
+      });
+
+      stageWrapper.addEventListener('mouseup', () => {
+        isPanning = false;
+        setCursor('grab');
+      });
+
+      stageWrapper.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        e.preventDefault();
+        const x = e.clientX - stageWrapper.offsetLeft;
+        const y = e.clientY - stageWrapper.offsetTop;
+        const walkX = (x - startX);
+        const walkY = (y - startY);
+        stageWrapper.scrollLeft = scrollLeft - walkX;
+        stageWrapper.scrollTop = scrollTop - walkY;
+      });
+
+      // Touch events for mobile/tablet panning
+      stageWrapper.addEventListener('touchstart', (e) => {
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+        isPanning = true;
+        startX = e.touches[0].clientX - stageWrapper.offsetLeft;
+        startY = e.touches[0].clientY - stageWrapper.offsetTop;
+        scrollLeft = stageWrapper.scrollLeft;
+        scrollTop = stageWrapper.scrollTop;
+      });
+
+      stageWrapper.addEventListener('touchend', () => {
+        isPanning = false;
+      });
+
+      stageWrapper.addEventListener('touchmove', (e) => {
+        if (!isPanning) return;
+        const x = e.touches[0].clientX - stageWrapper.offsetLeft;
+        const y = e.touches[0].clientY - stageWrapper.offsetTop;
+        const walkX = (x - startX);
+        const walkY = (y - startY);
+        stageWrapper.scrollLeft = scrollLeft - walkX;
+        stageWrapper.scrollTop = scrollTop - walkY;
+      });
+    }
+
     // Action buttons
     const btnCompare = document.getElementById('btn-compare-blueprints');
     if (btnCompare) {
@@ -433,8 +512,8 @@ class PdfViewerComponent {
     this.isComparing = true;
     
     if (this.isDxfMode) {
-      const w = 1200;
-      const h = 800;
+      const w = 1200 * this.zoomLevel;
+      const h = 800 * this.zoomLevel;
 
       this.canvasV1.width = w;
       this.canvasV1.height = h;
@@ -1048,6 +1127,41 @@ class PdfViewerComponent {
     }
 
     if (!diffCanvas || !v1Canvas || !v2Canvas || !wrapper) return;
+
+    if (this.isDxfMode) {
+      // Limpiar anulaciones CSS para que los canvases fluyan al tamaño nativo escalado
+      diffCanvas.style.width = '';
+      diffCanvas.style.maxWidth = '';
+      diffCanvas.style.height = '';
+      v1Canvas.style.width = '';
+      v1Canvas.style.maxWidth = '';
+      v1Canvas.style.height = '';
+      v2Canvas.style.width = '';
+      v2Canvas.style.maxWidth = '';
+      v2Canvas.style.height = '';
+
+      if (this.zoomLevel > 1.0) {
+        wrapper.style.alignItems = 'flex-start';
+        wrapper.style.justifyContent = 'flex-start';
+        wrapper.style.padding = '20px';
+      } else {
+        wrapper.style.alignItems = 'center';
+        wrapper.style.justifyContent = 'center';
+        wrapper.style.padding = '0';
+      }
+
+      this.uiManager.showLoader(true, "Ajustando resolución vectorial...");
+      setTimeout(async () => {
+        try {
+          await this.compareAndRenderPage();
+        } catch (err) {
+          console.error(err);
+        } finally {
+          this.uiManager.showLoader(false);
+        }
+      }, 50);
+      return;
+    }
 
     const baseW = diffCanvas.width;
     if (!baseW) return;
