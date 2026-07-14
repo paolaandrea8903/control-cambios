@@ -468,8 +468,8 @@ class PdfViewerComponent {
       ctxDiff.drawImage(result.canvasDiff, 0, 0);
 
       // Textos
-      const t1 = (this.v1DxfElements || []).filter(el => el.elementType === 'plano_texto').map(el => el.data.text).join(' ');
-      const t2 = (this.v2DxfElements || []).filter(el => el.elementType === 'plano_texto').map(el => el.data.text).join(' ');
+      const t1 = (this.v1DxfElements || []).filter(el => el.type === 'plano_texto').map(el => el.data.text).join(' ');
+      const t2 = (this.v2DxfElements || []).filter(el => el.type === 'plano_texto').map(el => el.data.text).join(' ');
 
       // Enriquecer
       this.processAIPDFChanges(result.clouds, t1, t2, w, h);
@@ -1103,7 +1103,7 @@ class PdfViewerComponent {
     let found = false;
 
     elements.forEach(el => {
-      if (el.elementType === 'plano_grafico') {
+      if (el.type === 'plano_grafico') {
         const geom = el.data;
         if (geom.type === 'line') {
           minX = Math.min(minX, geom.start[0], geom.end[0]);
@@ -1150,7 +1150,7 @@ class PdfViewerComponent {
 
     // Dibujar elementos gráficos
     elements.forEach(el => {
-      if (el.elementType === 'plano_grafico') {
+      if (el.type === 'plano_grafico') {
         const geom = el.data;
         if (geom.type === 'line') {
           ctx.beginPath();
