@@ -1144,6 +1144,14 @@ class PdfViewerComponent {
       v2Canvas.style.maxWidth = 'none';
       v2Canvas.style.height = `${h}px`;
 
+      const container = document.getElementById('bp-canvas-container');
+      if (container) {
+        container.style.flex = 'none';
+        container.style.flexShrink = '0';
+        container.style.width = `${w}px`;
+        container.style.height = `${h}px`;
+      }
+
       if (this.zoomLevel > 1.0) {
         wrapper.style.alignItems = 'flex-start';
         wrapper.style.justifyContent = 'flex-start';
@@ -1165,6 +1173,14 @@ class PdfViewerComponent {
         }
       }, 50);
       return;
+    }
+
+    const container = document.getElementById('bp-canvas-container');
+    if (container) {
+      container.style.flex = '';
+      container.style.flexShrink = '';
+      container.style.width = '';
+      container.style.height = '';
     }
 
     const baseW = diffCanvas.width;
