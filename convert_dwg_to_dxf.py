@@ -50,6 +50,12 @@ def convert_dwgs_to_dxfs(input_dir, output_dir=None):
     temp_in = os.path.join(input_dir, "_dwg_temp_in")
     temp_out = os.path.join(input_dir, "_dwg_temp_out")
     
+    # Limpiar ejecuciones anteriores para evitar cache
+    if os.path.exists(temp_in):
+        shutil.rmtree(temp_in)
+    if os.path.exists(temp_out):
+        shutil.rmtree(temp_out)
+        
     os.makedirs(temp_in, exist_ok=True)
     os.makedirs(temp_out, exist_ok=True)
     

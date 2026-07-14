@@ -1129,16 +1129,20 @@ class PdfViewerComponent {
     if (!diffCanvas || !v1Canvas || !v2Canvas || !wrapper) return;
 
     if (this.isDxfMode) {
-      // Limpiar anulaciones CSS para que los canvases fluyan al tamaño nativo escalado
-      diffCanvas.style.width = '';
-      diffCanvas.style.maxWidth = '';
-      diffCanvas.style.height = '';
-      v1Canvas.style.width = '';
-      v1Canvas.style.maxWidth = '';
-      v1Canvas.style.height = '';
-      v2Canvas.style.width = '';
-      v2Canvas.style.maxWidth = '';
-      v2Canvas.style.height = '';
+      const w = 1200 * this.zoomLevel;
+      const h = 800 * this.zoomLevel;
+
+      diffCanvas.style.width = `${w}px`;
+      diffCanvas.style.maxWidth = 'none';
+      diffCanvas.style.height = `${h}px`;
+      
+      v1Canvas.style.width = `${w}px`;
+      v1Canvas.style.maxWidth = 'none';
+      v1Canvas.style.height = `${h}px`;
+      
+      v2Canvas.style.width = `${w}px`;
+      v2Canvas.style.maxWidth = 'none';
+      v2Canvas.style.height = `${h}px`;
 
       if (this.zoomLevel > 1.0) {
         wrapper.style.alignItems = 'flex-start';
