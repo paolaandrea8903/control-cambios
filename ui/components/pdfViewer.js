@@ -1182,7 +1182,6 @@ class PdfViewerComponent {
       v2Canvas.style.maxWidth = 'none';
       v2Canvas.style.height = `${h}px`;
 
-      const container = document.getElementById('bp-canvas-container');
       if (container) {
         container.style.flex = 'none';
         container.style.flexShrink = '0';
@@ -1215,7 +1214,6 @@ class PdfViewerComponent {
       return;
     }
 
-    const container = document.getElementById('bp-canvas-container');
     const baseW = diffCanvas.width;
     if (!baseW) return;
 
